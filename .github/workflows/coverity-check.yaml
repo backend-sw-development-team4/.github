@@ -13,7 +13,7 @@ on:
         description: "Name of repository"
         type: string
     secrets:
-      GH_MANAGEPACKAGE_TOKEN:
+      MOPL_GH_MANAGEPACKAGE_TOKEN:
         required: false
         description: "If not provided, the repo creds will be used."
 jobs:
@@ -28,7 +28,7 @@ jobs:
       options: --user root
       credentials:
         username: pass
-        password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+        password: ${{ secrets.MOPL_GH_MANAGEPACKAGE_TOKEN }}
   
     name: Quality Check
     steps:
@@ -37,7 +37,7 @@ jobs:
         with:
           fetch-depth: 0
           path: ./${{ inputs.repository_name }}
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          token: ${{ secrets.MOPL_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: coverity
         working-directory: ./${{ inputs.repository_name }}

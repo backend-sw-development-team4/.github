@@ -46,15 +46,13 @@ on:
         type: string
         default: "dev"
     secrets:
-      GH_USERNAME:
+      MOPL_GH_MANAGEPACKAGE_TOKEN:
         required: true
-      GH_MANAGEPACKAGE_TOKEN:
+      MOPL_CODEFREEZE:
         required: true
-      CODEFREEZE:
+      MOPL_AWS_ACCESS_KEY_ID:
         required: true
-      AWS_ACCESS_KEY_ID:
-        required: true
-      AWS_SECRET_ACCESS_KEY:
+      MOPL_AWS_SECRET_ACCESS_KEY:
         required: true
       DOCKER_BUILD_ARGS:
         required: false
@@ -100,8 +98,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ inputs.ecr_region }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.MOPL_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.MOPL_AWS_SECRET_ACCESS_KEY }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -109,19 +107,19 @@ jobs:
         with:
           mask-password: 'true'
 
-#      - name: Set up Docker Buildx
-#        uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-#      - name: Build, tag, and push image to Amazon ECR
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: .
-#          file: ${{ inputs.dockerfile_name }}
-#          push: true
-#          provenance: false
-#          cache-from: type=gha
-#          cache-to: type=gha, mode=max
-#          build-args: |
-#            NPM_TOKEN=${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-#          tags: |
-#            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
+      - name: Build, tag, and push image to Amazon ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ inputs.dockerfile_name }}
+          push: true
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha, mode=max
+          build-args: |
+            NPM_TOKEN=${{ secrets.MOPL_GH_MANAGEPACKAGE_TOKEN }}
+          tags: |
+            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
