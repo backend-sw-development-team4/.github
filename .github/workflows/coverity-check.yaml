@@ -7,7 +7,7 @@ on:
         required: false
         description: "Name of repository"
         type: string
-        default: "coverity.devops.ai2concierge.com"
+        default: "cim.kdoggy.systems"
       repository_name:
         required: true
         description: "Name of repository"
@@ -15,6 +15,12 @@ on:
     secrets:
       MOPL_GH_MANAGEPACKAGE_TOKEN:
         required: false
+        description: "If not provided, the repo creds will be used."
+      CIM_PASSWD:
+        required: true
+        description: "If not provided, the repo creds will be used."
+      CIM_USER:
+        required: true
         description: "If not provided, the repo creds will be used."
 jobs:
   coverity:
@@ -50,8 +56,6 @@ jobs:
           COVERITY_INTERMEDIATE=${GITHUB_WORKSPACE}/coverity_emit_data
           CIMIP=coverity-se.net
           DATAPORT=9090
-          CIM_USER=stream_account
-          CIM_PASSWD=stream
           mkdir $COVERITY_CONFIG
           mkdir $COVERITY_INTERMEDIATE
           ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --javascript
@@ -60,7 +64,7 @@ jobs:
           APP_REVISION=`git rev-parse --short HEAD`;
           ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ inputs.repository_name }} --no-command
           ${CSA_DIR}/bin/cov-analyze --aggressiveness-level high --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
-          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${CIM_USER}:${CIM_PASSWD}@${{ inputs.cim_server }} --ssl --stream ${STREAM} --dir ${COVERITY_INTERMEDIATE} --cva --version ${APP_REVISION}";
+          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${{ secrets.CIM_USER }}:${{ secrets.CIM_PASSWD }}@${{ inputs.cim_server }} --ssl --stream ${STREAM} --dir ${COVERITY_INTERMEDIATE} --cva --version ${APP_REVISION}";
           max_try_count=10;
           while ! ${cov_commit} && [ $max_try_count -ne 0 ]; do
               echo "Remaining  try-count : ${max_try_count}";
