@@ -31,7 +31,7 @@ on:
         type: string
         default: "dev"
     secrets:
-      MOPL_GH_MANAGEPACKAGE_TOKEN:
+      GH_MANAGEPACKAGE_TOKEN:
         required: false
         description: "If not provided, the repo creds will be used."
 
@@ -51,7 +51,7 @@ jobs:
           repository: ${{ inputs.repository_name }}
           path: ./gitops
           ref: ${{ inputs.repository_ref }}
-          token: ${{ secrets.MOPL_GH_MANAGEPACKAGE_TOKEN }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Update image name and tag
         uses: mikefarah/yq@v4.34.2
