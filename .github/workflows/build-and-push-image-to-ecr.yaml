@@ -46,7 +46,7 @@ on:
         type: string
         default: "dev"
     secrets:
-      MOPL_GH_MANAGEPACKAGE_TOKEN:
+      GH_MANAGEPACKAGE_TOKEN:
         required: true
       MOPL_CODEFREEZE:
         required: true
@@ -120,6 +120,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha, mode=max
           build-args: |
-            NPM_TOKEN=${{ secrets.MOPL_GH_MANAGEPACKAGE_TOKEN }}
+            NPM_TOKEN=${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
           tags: |
             "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
