@@ -69,7 +69,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
-          repo: ${{ needs.initial_setting.outputs.repo }}
+          repo: CheongSong0320/${{ needs.initial_setting.outputs.repo }}
           commitish: ${{ needs.initial_setting.outputs.release_branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
@@ -106,7 +106,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
-          repo: ${{ needs.initial_setting.outputs.repo }}
+          repo: CheongSong0320/${{ needs.initial_setting.outputs.repo }}
           commitish: ${{ needs.initial_setting.outputs.release_branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
