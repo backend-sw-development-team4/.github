@@ -72,7 +72,7 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i .${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}" ./gitops/${{ inputs.version_file_path }}
+            yq -i '.${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.version_file_path }}
 
       - name: Commit changes
         working-directory: ./gitops
