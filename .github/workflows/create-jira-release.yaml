@@ -44,8 +44,8 @@ jobs:
           echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
           
   create-qa-jira-release:
-    if: ( ${{ inputs.release_env }} == 'QA' )
-    name: Create tag for new image
+    name: Create tag for new image (QA)
+    if: ${{ inputs.release_env == 'QA' }}
     needs: [initial_setting]
     runs-on: ubuntu-latest
     steps:
@@ -79,8 +79,8 @@ jobs:
           echo "🔗 Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
   create-prod-jira-release:
-    if: ( ${{ inputs.release_env }} == 'PROD' )
-    name: Create tag for new image
+    name: Create tag for new image (PROD)
+    if: ${{ inputs.release_env == 'PROD' }}
     needs: [initial_setting]
     runs-on: ubuntu-latest
     steps:
