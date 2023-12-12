@@ -87,7 +87,7 @@ jobs:
           fetch-depth: 0
           #repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
           #ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
-          repository: gitops-test
+          repository: CheongSong0320/gitops-test
           ref: refs/heads/dev
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       - name: Create Github Release
@@ -97,7 +97,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
-          repo: CheongSong0320/${{ needs.initial_setting.outputs.repo }}
+          repo: ${{ needs.initial_setting.outputs.repo }}
           commitish: ${{ needs.initial_setting.outputs.release_branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
