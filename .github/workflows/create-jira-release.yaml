@@ -74,6 +74,7 @@ jobs:
 
       - name: Github Release Result
         run: |
+          echo "is QA"
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
 
@@ -108,5 +109,6 @@ jobs:
 
       - name: Github Release Result
         run: |
+          echo "is PROD"
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
