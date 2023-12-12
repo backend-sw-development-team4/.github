@@ -1,0 +1,112 @@
+name: Create Github Release
+
+run-name: ${{ github.event.sender.login }} executes 'create_release' action for ${{ inputs.jira_key }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      jira_key:
+        description: 'Jira Project Key'
+        required: true
+        default: 'MCP'
+        type: string
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
+      release_env:
+        description: 'Release environment'
+        required: true
+        default: ""
+        type: string            
+
+jobs:
+  initial_setting:
+    outputs:
+      repo: ${{ steps.set_env.outputs.repo }}
+      release_branch: ${{ steps.set_env.outputs.release_branch }}
+    name: Initial Setting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository List
+        id: set_env
+        run: |
+          if [ ${{ inputs.jira_key }}  == "MCP" ]; then
+            repo=smartparking-gitops
+            release_branch=cicd-test
+          elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
+            repo=keeper-gitops
+            release_branch=main
+          fi
+          
+          echo "repo=$repo" >> $GITHUB_OUTPUT
+          echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
+          
+  create-qa-jira-release:
+    if: ( ${{ inputs.release_env }} == 'QA' )
+    name: Create tag for new image
+    needs: [initial_setting]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ needs.initial_setting.outputs.repo }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Create Github Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+        with:
+          tag_name: ${{ inputs.release_version }}
+          release_name: ${{ inputs.release_version }}
+          repo: ${{ needs.initial_setting.outputs.repo }}
+          commitish: ${{ needs.initial_setting.outputs.release_branch }}
+          body: |
+            🤖 This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. 🔍
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+
+      - name: Github Release Result
+        run: |
+          echo "🔍 Check the release results"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
+
+  create-prod-jira-release:
+    if: ( ${{ inputs.release_env }} == 'PROD' )
+    name: Create tag for new image
+    needs: [initial_setting]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ needs.initial_setting.outputs.repo }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Create Github Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+        with:
+          tag_name: ${{ inputs.release_version }}
+          release_name: ${{ inputs.release_version }}
+          repo: ${{ needs.initial_setting.outputs.repo }}
+          commitish: ${{ needs.initial_setting.outputs.release_branch }}
+          body: |
+            🤖 This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. 🔍
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+
+      - name: Github Release Result
+        run: |
+          echo "🔍 Check the release results"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
