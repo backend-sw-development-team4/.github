@@ -38,6 +38,9 @@ jobs:
           elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
             repo=keeper-gitops
             release_branch=main
+          elif [ ${{ inputs.jira_key }}  == "TEST" ]; then
+            repo=gitops-test
+            release_branch=dev
           fi
           
           echo "repo=$repo" >> $GITHUB_OUTPUT
@@ -53,8 +56,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          #repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
+          #ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          repository: github.com/CheongSong0320/gitops-test
+          ref: refs/heads/dev
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Create Github Release
@@ -64,7 +69,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
-          repo: ${{ needs.initial_setting.outputs.repo }}
+          #repo: ${{ needs.initial_setting.outputs.repo }}
           commitish: ${{ needs.initial_setting.outputs.release_branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
@@ -88,8 +93,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          #repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
+          #ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          repository: github.com/CheongSong0320/gitops-test
+          ref: refs/heads/dev
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Create Github Release
