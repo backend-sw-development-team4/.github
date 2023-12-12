@@ -95,7 +95,7 @@ jobs:
           fetch-depth: 0
           #repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
           #ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
-          repository: github.com/CheongSong0320/gitops-test
+          repository: CheongSong0320/gitops-test
           ref: refs/heads/dev
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
