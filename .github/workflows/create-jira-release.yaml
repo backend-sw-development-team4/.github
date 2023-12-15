@@ -34,7 +34,7 @@ jobs:
         run: |
           if [ ${{ inputs.jira_key }}  == "MCP" ]; then
             repo=smartparking-gitops
-            release_branch=cicd-test
+            release_branch=main
           elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
             repo=keeper-gitops
             release_branch=main
