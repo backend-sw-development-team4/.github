@@ -109,17 +109,23 @@ jobs:
       - name: Update image name and tag
         run: |
           while IFS= read -r line; do
-          if [[ $line == *"service-name"* ]]; then
-            service_name=$(echo "$line" | awk '{print $2}')
-          elif [[ $line == *"image-tag"* ]]; then
-            image_tag=$(echo "$line" | awk '{print $2}')
-          elif [[ $line == *"image-repo"* ]]; then
-            image_repo=$(echo "$line" | awk '{print $2}')
-            yq eval -i '
-              .images[0].newName = "'$image_repo'" |
-              .images[0].newTag = "'$image_tag'"
-            ' ./gitops/$service_name/env/prod/kustomization.yaml
-          fi
+            if [[ "${line:0:1}" != " " ]]; then
+              # Extract the value after "service-name:"
+              service_name=$(echo "$line" | awk -F':' '{print $1}' )
+            elif [[ $line == *"image-tag"* ]]; then
+              # Extract the value after "image-tag:"
+              image_tag=$(echo "$line" | awk '{print $2}')
+            elif [[ $line == *"image-repo"* ]]; then
+              # Extract the value after "commit-sha:"
+              image_repo=$(echo "$line" | awk '{print $2}')
+              yq -i '
+                .images[0].newName = "'$image_repo'" |
+                .images[0].newTag = "'$image_tag'"
+              ' ./$service_name/env/prod/kustomization.yaml
+              echo "Service Name: $service_name"
+              echo "Image Tag: $image_tag"
+              echo "Image Repo: $image_repo"
+            fi
           done < prod_version.yaml
 
       - name: check image name and tag
