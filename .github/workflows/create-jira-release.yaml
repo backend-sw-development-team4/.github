@@ -34,7 +34,7 @@ jobs:
         run: |
           if [ ${{ inputs.jira_key }}  == "MCP" ]; then
             repo=smartparking-gitops
-            release_branch=cicd-test
+            release_branch=main
           elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
             repo=keeper-gitops
             release_branch=main
@@ -154,5 +154,6 @@ jobs:
       - name: Github Release Result
         run: |
           echo "is PROD"
-          echo ":mag: Check the release results"
-          echo ":link: Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
+          echo "🔍 Check the release results"
+          echo "🔗 Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
+
