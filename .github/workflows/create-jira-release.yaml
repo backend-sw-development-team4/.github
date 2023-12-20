@@ -67,16 +67,16 @@ jobs:
           repo: ${{ needs.initial_setting.outputs.repo }}
           commitish: ${{ needs.initial_setting.outputs.release_branch }}
           body: |
-            🤖 This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release. 🔍
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            :robot_face: This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. :mag:
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. :telephone_receiver:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
         run: |
           echo "is QA"
-          echo "🔍 Check the release results"
-          echo "🔗 Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
+          echo ":mag: Check the release results"
+          echo ":link: Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
   create-prod-jira-release:
     name: Create tag for new image (PROD)
@@ -92,6 +92,50 @@ jobs:
           ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: check image name and tag
+        run: |
+          egrep -r "newTag|newName" * |grep prod
+
+      #After copying, update the production environment with server version information from prod_version.yaml  
+      - name: Copy the qa_version.yaml file to prod_version.yaml file.
+        run: |
+          cp qa_version.yaml prod_version.yaml
+
+      - name: Update image name and tag
+        run: |
+          while IFS= read -r line; do
+          if [[ $line == *"service-name"* ]]; then
+            service_name=$(echo "$line" | awk '{print $2}')
+          elif [[ $line == *"image-tag"* ]]; then
+            image_tag=$(echo "$line" | awk '{print $2}')
+          elif [[ $line == *"image-repo"* ]]; then
+            image_repo=$(echo "$line" | awk '{print $2}')
+            yq eval -i '
+              .images[0].newName = "'$image_repo'" |
+              .images[0].newTag = "'$image_tag'"
+            ' ./gitops/$service_name/env/prod/kustomization.yaml
+          fi
+          done < prod_version.yaml
+
+      - name: check image name and tag
+        run: |
+          egrep -r "newTag|newName" * |grep prod
+      
+#      - name: Commit changes
+#        working-directory: ./gitops
+#        run: |
+#          git config user.name "GitHub Actions Bot" && \
+#          git config user.email "<>" && \
+#          git add --all
+#          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
+#          git push origin dev
+#        continue-on-error: true
+
       - name: Create Github Release
         uses: actions/create-release@v1
         env:
@@ -102,9 +146,9 @@ jobs:
           repo: ${{ needs.initial_setting.outputs.repo }}
           commitish: ${{ needs.initial_setting.outputs.release_branch }}
           body: |
-            🤖 This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release. 🔍
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            :robot_face: This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. :mag:
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. :telephone_receiver:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
@@ -112,3 +156,4 @@ jobs:
           echo "is PROD"
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
+
