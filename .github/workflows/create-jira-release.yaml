@@ -109,6 +109,8 @@ jobs:
       #After copying, update the production environment with server version information from prod_version.yaml  
       - name: Copy the qa_version.yaml file to prod_version.yaml file.
         run: |
+          pwd
+          ls -la
           cp qa_version.yaml prod_version.yaml
 
       - name: Update image name and tag
