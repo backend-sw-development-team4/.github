@@ -20,6 +20,11 @@ on:
         required: true
         default: ""
         type: string            
+      git_org:
+        description: 'github organization'
+        required: false
+        default: "backend-sw-development-team4"
+        type: string         
 
 jobs:
   initial_setting:
@@ -34,7 +39,7 @@ jobs:
         run: |
           if [ ${{ inputs.jira_key }}  == "MCP" ]; then
             repo=smartparking-gitops
-            release_branch=main
+            release_branch=cicd-test
           elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
             repo=keeper-gitops
             release_branch=main
@@ -109,38 +114,56 @@ jobs:
       - name: Update image name and tag
         run: |
           while IFS= read -r line; do
-            if [[ "${line:0:1}" != " " ]]; then
-              # Extract the value after "service-name:"
-              service_name=$(echo "$line" | awk -F':' '{print $1}' )
-            elif [[ $line == *"image-tag"* ]]; then
-              # Extract the value after "image-tag:"
-              image_tag=$(echo "$line" | awk '{print $2}')
-            elif [[ $line == *"image-repo"* ]]; then
-              # Extract the value after "commit-sha:"
-              image_repo=$(echo "$line" | awk '{print $2}')
-              yq -i '
-                .images[0].newName = "'$image_repo'" |
-                .images[0].newTag = "'$image_tag'"
-              ' ./$service_name/env/prod/kustomization.yaml
-              echo "Service Name: $service_name"
-              echo "Image Tag: $image_tag"
-              echo "Image Repo: $image_repo"
-            fi
+          if [[ $line == *"service-name"* ]]; then
+            service_name=$(echo "$line" | awk '{print $2}')
+          elif [[ $line == *"image-tag"* ]]; then
+            image_tag=$(echo "$line" | awk '{print $2}')
+          elif [[ $line == *"image-repo"* ]]; then
+            image_repo=$(echo "$line" | awk '{print $2}')
+            yq eval -i '
+              .images[0].newName = "'$image_repo'" |
+              .images[0].newTag = "'$image_tag'"
+            ' ./gitops/$service_name/env/prod/kustomization.yaml
+          fi
           done < prod_version.yaml
 
       - name: check image name and tag
         run: |
           egrep -r "newTag|newName" * |grep prod
       
-#      - name: Commit changes
-#        working-directory: ./gitops
-#        run: |
-#          git config user.name "GitHub Actions Bot" && \
-#          git config user.email "<>" && \
-#          git add --all
-#          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
-#          git push origin dev
-#        continue-on-error: true
+      - name: Commit changes
+        working-directory: ./gitops
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
+          git push origin dev
+        continue-on-error: true
+
+      - name: Update msa prod tag
+        run: |
+          while IFS= read -r line; do
+          if [[ $line == *"service-name"* ]]; then
+            service_name=$(echo "$line" | awk '{print $2}')
+          elif [[ $line == *"repo-name"* ]]; then
+            repo_name=$(echo "$line" | awk '{print $2}')
+          elif [[ $line == *"image-tag"* ]]; then
+            version_tag=$(echo "$line" | awk '{print $2}')
+            echo "Service Name: $service_name"
+            echo "rep url: $repo_name"
+            echo "version tag: $version_tag"
+            git clone https://${{ secrets.GH_MANAGEPACKAGE_TOKEN }}@github.com/${{ inputs.git_org }}/${service_name}.git ${service_name}_tag
+            cd ${service_name}_tag
+            pwd
+            git tag -d prod || true
+            git push --delete origin prod || true 
+            git checkout $version_tag
+            git tag prod
+            git push origin prod
+            cd ..
+          fi
+          done < prod_version.yaml
 
       - name: Create Github Release
         uses: actions/create-release@v1
@@ -160,6 +183,5 @@ jobs:
       - name: Github Release Result
         run: |
           echo "is PROD"
-          echo "🔍 Check the release results"
-          echo "🔗 Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
-
+          echo ":mag: Check the release results"
+          echo ":link: Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
