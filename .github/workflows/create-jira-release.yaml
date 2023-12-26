@@ -130,39 +130,41 @@ jobs:
       - name: check image name and tag
         run: |
           egrep -r "newTag|newName" * |grep prod
+          cat ./device/env/prod/kustomization.yaml
+          cat ./vote/env/prod/kustomization.yaml
       
-      - name: Commit changes
-        run: |
-          git config user.name "GitHub Actions Bot" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
-          git push origin main
-        continue-on-error: true
+#      - name: Commit changes
+#        run: |
+#          git config user.name "GitHub Actions Bot" && \
+#          git config user.email "<>" && \
+#          git add --all
+#          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
+#          git push origin main
+#        continue-on-error: true
 
-      - name: Update msa prod tag
-        run: |
-          while IFS= read -r line; do
-          if [[ $line == *"service-name"* ]]; then
-            service_name=$(echo "$line" | awk '{print $2}')
-          elif [[ $line == *"repo-name"* ]]; then
-            repo_name=$(echo "$line" | awk '{print $2}')
-          elif [[ $line == *"image-tag"* ]]; then
-            version_tag=$(echo "$line" | awk '{print $2}')
-            echo "Service Name: $service_name"
-            echo "rep url: $repo_name"
-            echo "version tag: $version_tag"
-            git clone https://${{ secrets.GH_MANAGEPACKAGE_TOKEN }}@github.com/${{ inputs.git_org }}/${service_name}.git ${service_name}_tag
-            cd ${service_name}_tag
-            pwd
-            git tag -d prod || true
-            git push --delete origin prod || true 
-            git checkout $version_tag
-            git tag prod
-            git push origin prod
-            cd ..
-          fi
-          done < prod_version.yaml
+#      - name: Update msa prod tag
+#        run: |
+#          while IFS= read -r line; do
+#          if [[ $line == *"service-name"* ]]; then
+#            service_name=$(echo "$line" | awk '{print $2}')
+#          elif [[ $line == *"repo-name"* ]]; then
+#            repo_name=$(echo "$line" | awk '{print $2}')
+#          elif [[ $line == *"image-tag"* ]]; then
+#            version_tag=$(echo "$line" | awk '{print $2}')
+#            echo "Service Name: $service_name"
+#            echo "rep url: $repo_name"
+#            echo "version tag: $version_tag"
+#            git clone https://${{ secrets.GH_MANAGEPACKAGE_TOKEN }}@github.com/${{ inputs.git_org }}/${service_name}.git ${service_name}_tag
+#            cd ${service_name}_tag
+#            pwd
+#            git tag -d prod || true
+#            git push --delete origin prod || true 
+#            git checkout $version_tag
+#            git tag prod
+#            git push origin prod
+#            cd ..
+#          fi
+#          done < prod_version.yaml
 
       - name: Create Github Release
         uses: actions/create-release@v1
