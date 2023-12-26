@@ -39,7 +39,7 @@ jobs:
         run: |
           if [ ${{ inputs.jira_key }}  == "MCP" ]; then
             repo=smartparking-gitops
-            release_branch=cicd-test
+            release_branch=main
           elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
             repo=keeper-gitops
             release_branch=main
@@ -123,7 +123,7 @@ jobs:
             yq eval -i '
               .images[0].newName = "'$image_repo'" |
               .images[0].newTag = "'$image_tag'"
-            ' ./gitops/$service_name/env/prod/kustomization.yaml
+            ' ./$service_name/env/prod/kustomization.yaml
           fi
           done < prod_version.yaml
 
@@ -132,13 +132,12 @@ jobs:
           egrep -r "newTag|newName" * |grep prod
       
       - name: Commit changes
-        working-directory: ./gitops
         run: |
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
           git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
-          git push origin dev
+          git push origin main
         continue-on-error: true
 
       - name: Update msa prod tag
