@@ -135,8 +135,8 @@ jobs:
       - name: check image name and tag
         run: |
           egrep -r "newTag|newName" * |grep prod
-          cat ./device/env/prod/kustomization.yaml
-          cat ./vote/env/prod/kustomization.yaml
+          cat ./device-service/env/prod/kustomization.yaml
+          cat ./vote-service/env/prod/kustomization.yaml
       
 #      - name: Commit changes
 #        run: |
