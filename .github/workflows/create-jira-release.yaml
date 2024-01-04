@@ -1,6 +1,6 @@
 name: Create Github Release
 
-run-name: ${{ github.event.sender.login }} executes 'create_release' action for ${{ inputs.jira_key }}
+run-name: ${{ github.event.sender.login }} executes 'create_release' action for ${{ inputs.jira_key }} - ${{ inputs.release_version }}
 
 on:
   workflow_dispatch:
@@ -144,7 +144,7 @@ jobs:
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
-          git commit -m "ci: deploy mopl prod for {{ inputs.release_version }}" && \
+          git commit -m "ci: deploy mopl prod for ${{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
 
