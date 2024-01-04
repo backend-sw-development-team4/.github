@@ -144,7 +144,7 @@ jobs:
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
-          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
+          git commit -m "ci: deploy mopl prod for {{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
 
