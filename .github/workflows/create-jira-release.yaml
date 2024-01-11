@@ -61,6 +61,27 @@ jobs:
           repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
           ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Update version.json information
+        if: ${{ inputs.application_name }} != ""
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["Main Version"].["mopl Service Main Version"] = "${{ inputs.release_version }}"' qa_version.json       
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "ci: deploy mopl prod for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
 
       - name: Create Github Release
         uses: actions/create-release@v1
