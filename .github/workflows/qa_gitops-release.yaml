@@ -79,7 +79,7 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["Backend Version"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/qa_version.json       
+            yq -i '.["BackendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/qa_version.json       
 
       - name: Commit changes
         working-directory: ./gitops
