@@ -72,7 +72,7 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["Main Version"].["mopl Service Main Version"] = "${{ inputs.release_version }}"' qa_version.json       
+            yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' qa_version.json       
 
       - name: Commit changes
         run: |
