@@ -36,7 +36,7 @@ on:
         type: string
         default: "qa_version.yaml"
       region:
-        required: true
+        required: false
         description: "aws region"
         type: string
         default: "ap-northeast-2"
