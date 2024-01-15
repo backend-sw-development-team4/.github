@@ -95,21 +95,11 @@ jobs:
           cmd: |
             yq -i '.${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.version_file_path }}
 
-      - name: Commit changes
-        working-directory: ./gitops
-        run: |
-          git config user.name "GitHub Actions Bot" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
-          git push origin main
-        continue-on-error: true
-
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ vars.HWVSORG_AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.HWVSORG_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.HWVSORG_AWS_SECRET_KEY_ID }}
           aws-region: ${{ inputs.region }}
 
@@ -128,3 +118,14 @@ jobs:
 
           # Setting CloudFront
           aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront_distribution_id }} --paths "/*"
+
+      - name: Commit changes
+        working-directory: ./gitops
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
+          git push origin main
+        continue-on-error: true
+
