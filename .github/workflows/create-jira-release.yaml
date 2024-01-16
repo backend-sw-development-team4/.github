@@ -102,7 +102,13 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' qa_version.json       
+            yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
+
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["ReleaseData"] = "'"$(date +'%Y-%m-%d %H:%M:%S')"'"' qa_version.json
 
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
@@ -189,6 +195,19 @@ jobs:
           ls -la
           cp qa_version.yaml prod_version.yaml
           cp qa_version.json prod_version.json
+
+      - name: Update version.json information
+        if: ${{ inputs.application_name }} != ""
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' prod_version.json     
+
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["ReleaseData"] = "'"$(date +'%Y-%m-%d %H:%M:%S')"'"' prod_version.json
 
       - name: Update image name and tag
         run: |
