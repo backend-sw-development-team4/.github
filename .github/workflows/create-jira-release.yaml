@@ -25,11 +25,6 @@ on:
         required: false
         default: "backend-sw-development-team4"
         type: string
-      region:
-        required: false
-        description: "aws region"
-        type: string
-        default: "ap-northeast-2"
       qa_version_json_file_path:
         required: false
         description: "Path to the json file described all version of application"
@@ -115,7 +110,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.HWVSORG_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.HWVSORG_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.region }}
+          aws-region: ap-northeast-2
 
       # Assume to Each Account as AWSControlTowerExecution
       - name: Push build artifact to S3 Bucket and invalidation CloudFront
@@ -127,7 +122,7 @@ jobs:
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
           
           # Upload qa version file to S3 bucket.
-          aws s3 cp ${{ inputs.qa_version_json_file_path }} s3://mopl-common-p-an2/${{ inputs.qa_version_json_file_path }} --region ${{ inputs.region }}
+          aws s3 cp ${{ inputs.qa_version_json_file_path }} s3://mopl-common-p-an2/${{ inputs.qa_version_json_file_path }} --region ap-northeast-2
 
           # Setting CloudFront
           aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*"
@@ -226,7 +221,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.HWVSORG_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.HWVSORG_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.region }}
+          aws-region: ap-northeast-2
 
       # Assume to Each Account as AWSControlTowerExecution
       - name: Push build artifact to S3 Bucket and invalidation CloudFront
@@ -238,7 +233,7 @@ jobs:
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
           
           # Upload qa version file to S3 bucket.
-          aws s3 cp ${{ inputs.prod_version_json_file_path }} s3://mopl-common-p-an2/${{ inputs.prod_version_json_file_path }} --region ${{ inputs.region }}
+          aws s3 cp ${{ inputs.prod_version_json_file_path }} s3://mopl-common-p-an2/${{ inputs.prod_version_json_file_path }} --region ap-northeast-2
 
           # Setting CloudFront
           aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cloudfront_distribution_id }} --paths "/*"
