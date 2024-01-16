@@ -108,7 +108,7 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["ReleaseData"] = "'"$(date +'%Y-%m-%d %H:%M:%S')"'"' qa_version.json
+            yq -i '.["ReleaseData"] = "'"$(date -d '9 hours' +'%Y-%m-%d %H:%M:%S')"'"' qa_version.json
 
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
@@ -207,7 +207,7 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["ReleaseData"] = "'"$(date +'%Y-%m-%d %H:%M:%S')"'"' prod_version.json
+            yq -i '.["ReleaseData"] = "'"$(date -d '9 hours' +'%Y-%m-%d %H:%M:%S')"'"' prod_version.json
 
       - name: Update image name and tag
         run: |
