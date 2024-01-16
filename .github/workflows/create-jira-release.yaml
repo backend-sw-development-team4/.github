@@ -24,7 +24,42 @@ on:
         description: 'github organization'
         required: false
         default: "backend-sw-development-team4"
-        type: string         
+        type: string
+      region:
+        required: false
+        description: "aws region"
+        type: string
+        default: "ap-northeast-2"
+      qa_version_json_file_path:
+        required: false
+        description: "Path to the json file described all version of application"
+        type: string
+        default: "qa_version.json"
+      prod_version_json_file_path:
+        required: false
+        description: "Path to the json file described all version of application"
+        type: string
+        default: "prod_version.json"
+      mopl_qa_aws_accountid:
+        required: false
+        description: "mopl qa aws account id"
+        type: string
+        default: "852637827699"
+      mopl_prod_aws_accountid:
+        required: false
+        description: "mopl qa aws account id"
+        type: string
+        default: "852637827699"
+      qa_cloudfront_distribution_id:
+        required: false
+        description: "cloudfront_distribution_id"
+        type: string
+        default: "EXPTNFYJG8CR8"
+      prod_cloudfront_distribution_id:
+        required: false
+        description: "cloudfront_distribution_id"
+        type: string
+        default: "EXPTNFYJG8CR8"
 
 jobs:
   initial_setting:
@@ -73,6 +108,30 @@ jobs:
         with:
           cmd: |
             yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' qa_version.json       
+
+      # Login To HVC_Admin_Automation for Deploy
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.HWVSORG_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.HWVSORG_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+
+      # Assume to Each Account as AWSControlTowerExecution
+      - name: Push build artifact to S3 Bucket and invalidation CloudFront
+        run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.mopl_qa_aws_accountid }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
+          # Upload qa version file to S3 bucket.
+          aws s3 cp ${{ inputs.qa_version_json_file_path }} s3://mopl-common-p-an2/${{ inputs.qa_version_json_file_path }} --region ${{ inputs.region }}
+
+          # Setting CloudFront
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*"
+
 
       - name: Commit changes
         run: |
@@ -134,6 +193,7 @@ jobs:
           pwd
           ls -la
           cp qa_version.yaml prod_version.yaml
+          cp qa_version.json prod_version.json
 
       - name: Update image name and tag
         run: |
@@ -159,6 +219,30 @@ jobs:
           egrep -r "newTag|newName" * |grep prod
           cat ./device-service/env/prod/kustomization.yaml
           cat ./vote-service/env/prod/kustomization.yaml
+
+      # Login To HVC_Admin_Automation for Deploy
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.HWVSORG_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.HWVSORG_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+
+      # Assume to Each Account as AWSControlTowerExecution
+      - name: Push build artifact to S3 Bucket and invalidation CloudFront
+        run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.mopl_prod_aws_accountid }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
+          # Upload qa version file to S3 bucket.
+          aws s3 cp ${{ inputs.prod_version_json_file_path }} s3://mopl-common-p-an2/${{ inputs.prod_version_json_file_path }} --region ${{ inputs.region }}
+
+          # Setting CloudFront
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cloudfront_distribution_id }} --paths "/*"
+  
       
       - name: Commit changes
         run: |
