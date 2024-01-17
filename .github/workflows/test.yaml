@@ -1,6 +1,6 @@
-name: Create Github Release
+name: test
 
-run-name: ${{ github.event.sender.login }} executes 'create_release' action for ${{ inputs.jira_key }} - ${{ inputs.release_version }}
+run-name: test action
 
 on:
   workflow_dispatch:
