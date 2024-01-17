@@ -104,11 +104,18 @@ jobs:
           cmd: |
             yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
 
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
+
       - name: Update Release date to version.json information
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["ReleaseData"] = "'"$(date +'%Y-%m-%d %H:%M:%S')"' UTC "' qa_version.json
+            yq -i '.["MainVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
 
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
@@ -203,11 +210,18 @@ jobs:
           cmd: |
             yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' prod_version.json     
 
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
+
       - name: Update Release date to version.json information
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["ReleaseData"] = "'"$(date +'%Y-%m-%d %H:%M:%S')"' UTC "' prod_version.json
+            yq -i '.["MainVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' prod_version.json
 
       - name: Update image name and tag
         run: |
