@@ -1,0 +1,117 @@
+name: Create Github Release
+
+run-name: ${{ github.event.sender.login }} executes 'create_release' action for ${{ inputs.jira_key }} - ${{ inputs.release_version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      jira_key:
+        description: 'Jira Project Key'
+        required: true
+        default: 'MCP'
+        type: string
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
+      release_env:
+        description: 'Release environment'
+        required: true
+        default: ""
+        type: string            
+      git_org:
+        description: 'github organization'
+        required: false
+        default: "backend-sw-development-team4"
+        type: string
+      qa_version_json_file_path:
+        required: false
+        description: "Path to the json file described all version of application"
+        type: string
+        default: "qa_version.json"
+      prod_version_json_file_path:
+        required: false
+        description: "Path to the json file described all version of application"
+        type: string
+        default: "prod_version.json"
+      mopl_qa_aws_accountid:
+        required: false
+        description: "mopl qa aws account id"
+        type: string
+        default: "852637827699"
+      mopl_prod_aws_accountid:
+        required: false
+        description: "mopl qa aws account id"
+        type: string
+        default: "852637827699"
+      qa_cloudfront_distribution_id:
+        required: false
+        description: "cloudfront_distribution_id"
+        type: string
+        default: "EXPTNFYJG8CR8"
+      prod_cloudfront_distribution_id:
+        required: false
+        description: "cloudfront_distribution_id"
+        type: string
+        default: "EXPTNFYJG8CR8"
+
+jobs:
+  initial_setting:
+    outputs:
+      repo: ${{ steps.set_env.outputs.repo }}
+      release_branch: ${{ steps.set_env.outputs.release_branch }}
+    name: Initial Setting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository List
+        id: set_env
+        run: |
+          if [ ${{ inputs.jira_key }}  == "MCP" ]; then
+            repo=smartparking-gitops
+            release_branch=main
+          elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
+            repo=keeper-gitops
+            release_branch=main
+          fi
+          
+          echo "repo=$repo" >> $GITHUB_OUTPUT
+          echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
+          
+  create-qa-jira-release:
+    name: Create tag for new image (QA)
+    if: ${{ inputs.release_env == 'QA' }}
+    needs: [initial_setting]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Update version.json information
+        if: ${{ inputs.application_name }} != ""
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
+
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["ReleaseData"] = "'"$(date -d '+6 hours' +'%Y-%m-%d %H:%M:%S')"'"' qa_version.json
+            cat qa_version.json
+
+
+
+
+      
