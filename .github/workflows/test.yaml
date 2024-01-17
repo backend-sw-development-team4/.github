@@ -20,41 +20,17 @@ on:
         required: true
         default: ""
         type: string            
-      git_org:
-        description: 'github organization'
-        required: false
-        default: "backend-sw-development-team4"
+      application_name:
+        description: 'Release environment'
+        required: true
+        default: ""
         type: string
-      qa_version_json_file_path:
-        required: false
-        description: "Path to the json file described all version of application"
+
+      image_tag:
+        description: 'Release environment'
+        required: true
+        default: "v1.1.1"
         type: string
-        default: "qa_version.json"
-      prod_version_json_file_path:
-        required: false
-        description: "Path to the json file described all version of application"
-        type: string
-        default: "prod_version.json"
-      mopl_qa_aws_accountid:
-        required: false
-        description: "mopl qa aws account id"
-        type: string
-        default: "852637827699"
-      mopl_prod_aws_accountid:
-        required: false
-        description: "mopl qa aws account id"
-        type: string
-        default: "852637827699"
-      qa_cloudfront_distribution_id:
-        required: false
-        description: "cloudfront_distribution_id"
-        type: string
-        default: "EXPTNFYJG8CR8"
-      prod_cloudfront_distribution_id:
-        required: false
-        description: "cloudfront_distribution_id"
-        type: string
-        default: "EXPTNFYJG8CR8"
 
 jobs:
   initial_setting:
@@ -116,6 +92,24 @@ jobs:
         with:
           cmd: |
             yq -i '.["ReleaseData"] = "${{ steps.time.outputs.time }}"' qa_version.json
+            cat qa_version.json
+
+      - name: Update BE server version.json information
+        if: ${{ inputs.application_name != 'admin-frontend' }}
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["BackendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' qa_version.json       
+            echo "BE"
+            cat qa_version.json
+
+      - name: Update FE server version.json information
+        if: ${{ inputs.application_name == 'admin-frontend' }}
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["FrontendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' qa_version.json     
+            echo "FE" 
             cat qa_version.json
 
 
