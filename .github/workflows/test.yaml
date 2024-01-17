@@ -108,8 +108,8 @@ jobs:
         id: time
         uses: nanzm/get-time-action@master
         with:
-          timeZone: UTC+9
-          format: 'YYYY-MM-DD-HH-mm-ss'
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
 
       - name: Update Release date to version.json information
         uses: mikefarah/yq@v4.34.2
