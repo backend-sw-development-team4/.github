@@ -96,18 +96,18 @@ jobs:
             yq -i '.${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.version_file_path }}
 
       - name: Update BE server version.json information
-        if: ${{ inputs.application_name }} != "" && ${{ inputs.application_name }} != 'admin-frontend'
+        if: ${{ inputs.application_name != 'admin-frontend' }}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
             yq -i '.["BackendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/qa_version.json       
 
       - name: Update FN server version.json information
-        if: ${{ inputs.application_name }} != "" && ${{ inputs.application_name }} == 'admin-frontend'
+        if: ${{ inputs.application_name == 'admin-frontend' }}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["BackendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/qa_version.json       
+            yq -i '.["FrontendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/qa_version.json       
 
 
       # Login To HVC_Admin_Automation for Deploy
