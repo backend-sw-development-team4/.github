@@ -205,7 +205,11 @@ jobs:
   create-prod-jira-release:
     name: deploy Prod (PROD)
     if: ${{ inputs.release_env == 'PROD' }}
-    needs: [initial_setting]
+    needs:
+      - initial_setting
+      - devops-approval
+      - sqa-approval
+      - sqe-approval
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
