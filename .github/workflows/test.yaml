@@ -41,18 +41,16 @@ jobs:
           echo $MAX_PATCH
           echo $MAIN_VERSION
           echo "::set-output name=main_version::$MAIN_VERSION"
-          echo 
-
 
       - name: Calculate new version
         id: calculate_version
         run: |
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            CURRENT_VERSION="${{ steps.get_version.outputs.main_version }}"
+            CURRENT_VERSION="${{ steps.get_versions.outputs.main_version }}"  # Corrected the output name
             IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
             NEW_VERSION="${VERSION_PARTS[0]}.$((${VERSION_PARTS[1]} + 1)).0"
           elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
-            CURRENT_VERSION="${{ steps.get_version.outputs.main_version }}"
+            CURRENT_VERSION="${{ steps.get_versions.outputs.main_version }}"  # Corrected the output name
             IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
             NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$((${VERSION_PARTS[2]} + 1))"
           else
@@ -61,4 +59,4 @@ jobs:
           fi
           echo "::set-output name=new_version::$NEW_VERSION"
         env:
-          MAIN_VERSION: ${{ steps.get_version.outputs.main_version }}
+          MAIN_VERSION: ${{ steps.get_versions.outputs.main_version }} 
