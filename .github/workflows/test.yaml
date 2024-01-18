@@ -19,89 +19,55 @@ on:
 
 jobs:
   initial_setting:
-    outputs:
-      repo: ${{ steps.set_env.outputs.repo }}
-      release_branch: ${{ steps.set_env.outputs.release_branch }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
-      - name: Repository List
-        id: set_env
+      - name: Get latest versions
+        id: get_versions
         run: |
-          if [ ${{ inputs.jira_key }}  == "MCP" ]; then
-            repo=smartparking-gitops
-            release_branch=main
-          elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
-            repo=keeper-gitops
-            release_branch=main
+          PKG_1_VERSION=1.0.4
+          PKG_2_VERSION=1.5.0
+          PKG_3_VERSION=1.3.2
+          PKG_4_VERSION=1.4.1
+
+          # Extract minor and patch versions from the package versions
+
+          get_major() {
+            echo "$1" | cut -d. -f1
+          }
+          
+          get_minor() {
+            echo "$1" | cut -d. -f2
+          }
+
+          get_patch() {
+            echo "$1" | cut -d. -f3
+          }
+
+          # Find the maximum minor and patch values
+          MAX_MAJOR=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n' | sort -t. -k1 -n | tail -n1 | get_minor)
+          MAX_MINOR=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n' | sort -t. -k2 -n | tail -n1 | get_minor)
+          MAX_PATCH=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n' | sort -t. -k3 -n | tail -n1 | get_patch)
+          NEW_VERSION="$MAX_MAJOR.$MAX_MINOR.$MAX_PATCH"
+
+          echo "::set-output name=main_version::$NEW_VERSION"
+
+
+      - name: Calculate new version
+        id: calculate_version
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            CURRENT_VERSION="${{ steps.get_version.outputs.main_version }}"
+            IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+            NEW_VERSION="${VERSION_PARTS[0]}.$((${VERSION_PARTS[1]} + 1)).0"
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+            CURRENT_VERSION="${{ steps.get_version.outputs.main_version }}"
+            IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+            NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$((${VERSION_PARTS[2]} + 1))"
+          else
+            echo "Not on main or develop branch. Exiting..."
+            exit 1
           fi
-          
-          echo "repo=$repo" >> $GITHUB_OUTPUT
-          echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
-          
-  create-qa-jira-release:
-    name: Create tag for new image (QA)
-    if: ${{ inputs.release_env == 'QA' }}
-    needs: [initial_setting]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install yq
-        run: |
-          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
-
-
-  devops-approval: 
-    name: Create tag for new image (PROD)
-    if: ${{ inputs.release_env == 'PROD' }}
-    needs: [initial_setting]
-    environment: devops-approval
-    runs-on: ubuntu-latest
-    steps: 
-      - name: Dummy Step
-        run: echo "This is a dummy step."
-
-  sqe-approval: 
-    name: Create tag for new image (PROD)
-    if: ${{ inputs.release_env == 'PROD' }}
-    needs: [initial_setting]
-    environment: sqe-approval
-    runs-on: ubuntu-latest
-    steps: 
-      - name: Dummy Step
-        run: echo "This is a dummy step."
-
-  sqa-approval: 
-    name: Create tag for new image (PROD)
-    if: ${{ inputs.release_env == 'PROD' }}
-    needs: [initial_setting]
-    environment: sqa-approval
-    runs-on: ubuntu-latest
-    steps: 
-      - name: Dummy Step
-        run: echo "This is a dummy step."
-
-  create-prod-jira-release:
-    name: Create tag for new image (PROD)
-    if: ${{ inputs.release_env == 'PROD' }}
-    needs: 
-      - initial_setting
-      - devops-approval
-      - sqa-approval
-      - sqe-approval
-    runs-on: ubuntu-latest
-    environment: prod-deploy
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Install yq
-        run: |
-          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
-
+          echo "::set-output name=new_version::$NEW_VERSION"
+        env:
+          MAIN_VERSION: ${{ steps.get_version.outputs.main_version }}
