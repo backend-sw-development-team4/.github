@@ -31,23 +31,10 @@ jobs:
           PKG_4_VERSION=1.4.1
 
           # Extract minor and patch versions from the package versions
-
-          get_major() {
-            echo "$1" | cut -d. -f1
-          }
-          
-          get_minor() {
-            echo "$1" | cut -d. -f2
-          }
-
-          get_patch() {
-            echo "$1" | cut -d. -f3
-          }
-
           # Find the maximum minor and patch values
-          MAX_MAJOR=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n' | sort -t. -k1 -n | tail -n1 | get_minor)
-          MAX_MINOR=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n' | sort -t. -k2 -n | tail -n1 | get_minor)
-          MAX_PATCH=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n' | sort -t. -k3 -n | tail -n1 | get_patch)
+          MAX_MAJOR=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n'| sort -t. -k1 -n | tail -n1  | cut -d. -f1)
+          MAX_MINOR=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n'| sort -t. -k2 -n | tail -n1  | cut -d. -f2)
+          MAX_PATCH=$(echo "$PKG_1_VERSION $PKG_2_VERSION $PKG_3_VERSION $PKG_4_VERSION" | tr ' ' '\n'| sort -t. -k3 -n | tail -n1  | cut -d. -f3)
           MAIN_VERSION="$MAX_MAJOR.$MAX_MINOR.$MAX_PATCH"
           echo $MAX_MAJOR
           echo $MAX_MINOR
