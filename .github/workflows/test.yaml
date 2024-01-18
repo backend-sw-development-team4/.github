@@ -56,18 +56,24 @@ jobs:
     if: ${{ inputs.release_env == 'PROD' }}
     needs: [initial_setting]
     environment: devops-approval
+    runs-on: ubuntu-latest
+    steps: []
 
   sqe-approval: 
     name: Create tag for new image (PROD)
     if: ${{ inputs.release_env == 'PROD' }}
     needs: [initial_setting]
     environment: sqe-approval
+    runs-on: ubuntu-latest
+    steps: []
 
   sqa-approval: 
     name: Create tag for new image (PROD)
     if: ${{ inputs.release_env == 'PROD' }}
     needs: [initial_setting]
     environment: sqa-approval
+    runs-on: ubuntu-latest
+    steps: []
 
   create-prod-jira-release:
     name: Create tag for new image (PROD)
