@@ -79,7 +79,7 @@ jobs:
           echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
           
   create-qa-jira-release:
-    name: Create tag for new image (QA)
+    name: deploy QA (QA)
     if: ${{ inputs.release_env == 'QA' }}
     needs: [initial_setting]
     runs-on: ubuntu-latest
@@ -171,12 +171,42 @@ jobs:
           echo ":mag: Check the release results"
           echo ":link: Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
+  devops-approval: 
+    name: Waiting for Devops Approval (PROD)
+    if: ${{ inputs.release_env == 'PROD' }}
+    needs: [initial_setting]
+    environment: devops-approval
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Dummy Step
+        run: echo "This is a dummy step."
+
+  sqe-approval: 
+    name: Waiting for SQE Approval (PROD)
+    if: ${{ inputs.release_env == 'PROD' }}
+    needs: [initial_setting]
+    environment: sqe-approval
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Dummy Step
+        run: echo "This is a dummy step."
+
+  sqa-approval: 
+    name: Waiting for SQA Approval (PROD)
+    if: ${{ inputs.release_env == 'PROD' }}
+    needs: [initial_setting]
+    environment: sqa-approval
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Dummy Step
+        run: echo "This is a dummy step."
+
+
   create-prod-jira-release:
-    name: Create tag for new image (PROD)
+    name: deploy Prod (PROD)
     if: ${{ inputs.release_env == 'PROD' }}
     needs: [initial_setting]
     runs-on: ubuntu-latest
-    environment: prod-deploy
     steps:
       - name: Checkout
         uses: actions/checkout@v4
