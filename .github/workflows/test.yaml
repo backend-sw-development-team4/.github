@@ -1,36 +1,21 @@
 name: test
 
-run-name: test action
+run-name: test
 
 on:
   workflow_dispatch:
     inputs:
       jira_key:
         description: 'Jira Project Key'
-        required: true
+        required: false
         default: 'MCP'
         type: string
-      release_version:
-        description: 'Release Version'
-        required: true
-        default: ""
-        type: string
       release_env:
-        description: 'Release environment'
-        required: true
-        default: ""
-        type: string            
-      application_name:
-        description: 'Release environment'
-        required: true
-        default: ""
+        description: 'Jira Project Key'
+        required: false
+        default: 'PROD'
         type: string
 
-      image_tag:
-        description: 'Release environment'
-        required: true
-        default: "v1.1.1"
-        type: string
 
 jobs:
   initial_setting:
@@ -60,6 +45,41 @@ jobs:
     needs: [initial_setting]
     runs-on: ubuntu-latest
     steps:
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+
+  devops-approval: 
+    name: Create tag for new image (PROD)
+    if: ${{ inputs.release_env == 'PROD' }}
+    needs: [initial_setting]
+    environment: devops-approval
+
+  sqe-approval: 
+    name: Create tag for new image (PROD)
+    if: ${{ inputs.release_env == 'PROD' }}
+    needs: [initial_setting]
+    environment: sqe-approval
+
+  sqa-approval: 
+    name: Create tag for new image (PROD)
+    if: ${{ inputs.release_env == 'PROD' }}
+    needs: [initial_setting]
+    environment: sqa-approval
+
+  create-prod-jira-release:
+    name: Create tag for new image (PROD)
+    if: ${{ inputs.release_env == 'PROD' }}
+    needs: 
+      - initial_setting
+      - devops-approval
+      - sqa-approval
+      - sqe-approval
+    runs-on: ubuntu-latest
+    environment: prod-deploy
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -67,52 +87,9 @@ jobs:
           repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
           ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-          
+
       - name: Install yq
         run: |
           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-      - name: Update version.json information
-        if: ${{ inputs.application_name }} != ""
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
-
-      - name: Get Time
-        id: time
-        uses: nanzm/get-time-action@master
-        with:
-          timeZone: UTC-9
-          format: 'YYYY-MM-DD HH:mm:ss'
-
-      - name: Update Release date to version.json information
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["ReleaseData"] = "${{ steps.time.outputs.time }}"' qa_version.json
-            cat qa_version.json
-
-      - name: Update BE server version.json information
-        if: ${{ inputs.application_name != 'admin-frontend' }}
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["BackendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' qa_version.json       
-            echo "BE"
-            cat qa_version.json
-
-      - name: Update FE server version.json information
-        if: ${{ inputs.application_name == 'admin-frontend' }}
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["FrontendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' qa_version.json     
-            echo "FE" 
-            cat qa_version.json
-
-
-
-
-      
