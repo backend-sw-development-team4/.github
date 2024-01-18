@@ -57,7 +57,9 @@ jobs:
     needs: [initial_setting]
     environment: devops-approval
     runs-on: ubuntu-latest
-    steps: []
+    steps: 
+      - name: Dummy Step
+        run: echo "This is a dummy step."
 
   sqe-approval: 
     name: Create tag for new image (PROD)
@@ -65,7 +67,9 @@ jobs:
     needs: [initial_setting]
     environment: sqe-approval
     runs-on: ubuntu-latest
-    steps: []
+    steps: 
+      - name: Dummy Step
+        run: echo "This is a dummy step."
 
   sqa-approval: 
     name: Create tag for new image (PROD)
@@ -73,7 +77,9 @@ jobs:
     needs: [initial_setting]
     environment: sqa-approval
     runs-on: ubuntu-latest
-    steps: []
+    steps: 
+      - name: Dummy Step
+        run: echo "This is a dummy step."
 
   create-prod-jira-release:
     name: Create tag for new image (PROD)
