@@ -5,14 +5,14 @@ run-name: '${{ github.event.sender.login }} executed manual static analysis'
 on:
   workflow_dispatch:
     inputs:
-      REPO_NAME:
-        description: 'Repository'
+      STREAM:
+        description: 'Coverity Stream Name (Repo Name)'
         required: true
         type: choice
         default: 'Choose Repo Name'
         options:  
-          - saleshub-frontend
-          - saleshub-backend
+          - saasportal-portal-frontend
+          - saasportal-portal-backend
           - saleshub-license-server
           - saleshub-license-helper
       BUILD_PATH:
@@ -32,13 +32,35 @@ on:
         default: true
 
 jobs:
+  initial-tasks: 
+    name: Initial tasks
+    runs-on: ubuntu-latest
+    outputs:
+      REPO_NAME: ${{ steps.set_env.outputs.REPO_NAME }}
+    steps:
+      - name: Set REPO_NAME Env
+        id: set_env
+        run: |
+          if [ ${{ inputs.STREAM }}  == "saleshub-license-server" ]; then
+            REPO_NAME=license-server
+          elif [ ${{ inputs.STREAM }}  == "saleshub-license-helper" ]; then
+            REPO_NAME=license-helper
+          else
+            REPO_NAME=${{ inputs.STREAM }}
+          fi
+
+          echo $REPO_NAME
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT   
+
   static-analysis:
     name: Analysis code quality
+    needs: [initial-tasks]
     uses: backend-sw-development-team4/.github/.github/workflows/static-analysis.yaml@main
     with:
-      REPO_NAME: ${{ inputs.REPO_NAME }}
+      REPO_NAME: ${{ needs.initial-tasks.outputs.REPO_NAME }}
       BUILD_PATH: ${{ inputs.BUILD_PATH }}
       QUALITY_REPORT: ${{ inputs.QUALITY_REPORT }}
       DISPATCH: true
       BRANCH: ${{ inputs.BRANCH }}
+      STREAM: ${{ inputs.STREAM }}
     secrets: inherit
