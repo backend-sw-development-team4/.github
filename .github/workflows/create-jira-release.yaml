@@ -62,6 +62,7 @@ jobs:
       repo: ${{ steps.set_env.outputs.repo }}
       release_branch: ${{ steps.set_env.outputs.release_branch }}
     name: Initial Setting
+    environment: main
     runs-on: ubuntu-latest
     steps:
       - name: Repository List
