@@ -16,7 +16,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::366639460724:role/AWSControlTowerExecution
-          role-session-name: arn:aws:iam::366639460724:role/TEAM4-admin-automation
+          role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1       
 
       - name: Check assumed result # Test Assume Role Result
