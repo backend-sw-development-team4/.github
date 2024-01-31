@@ -48,8 +48,6 @@ on:
     secrets:
       GH_MANAGEPACKAGE_TOKEN:
         required: true
-      AUTOMATION_GH_MANAGEPACKAGE_TOKEN:
-        required: true
 
 jobs:
   coverity:
