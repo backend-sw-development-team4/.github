@@ -1,12 +1,11 @@
 name: test
 
-run-name: test
+run-name: aws role test
 
 on:
   workflow_dispatch:
 
-permissions:
-  id-token: write
+permissions: write-all
 
 jobs:
   configure-aws-credential:
@@ -17,7 +16,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::366639460724:role/AWSControlTowerExecution
-          role-session-name: TEAM4-admin-automation
+          role-session-name: arn:aws:iam::366639460724:role/TEAM4-admin-automation
           aws-region: us-east-1       
 
       - name: Check assumed result # Test Assume Role Result
