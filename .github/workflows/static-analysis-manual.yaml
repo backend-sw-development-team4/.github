@@ -15,8 +15,8 @@ on:
           - saasportal-portal-backend
           - saleshub-license-server
           - saleshub-license-helper
-      BUILD_PATH:
-        description: 'Build target path'
+      ANALYSIS_PATH:
+        description: 'Target Path'
         required: true
         type: string
         default: '.'
@@ -24,9 +24,9 @@ on:
         description: 'Target Branch'
         required: true
         type: string
-        default: 'develop, release, main, etc...'
+        default: 'release'
       QUALITY_REPORT:
-        description: 'Make static analysis report for CIM'
+        description: 'Make static analysis report'
         required: false
         type: boolean
         default: true
@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       REPO_NAME: ${{ steps.set_env.outputs.REPO_NAME }}
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN}}
     steps:
       - name: Set REPO_NAME Env
         id: set_env
@@ -49,18 +50,20 @@ jobs:
             REPO_NAME=${{ inputs.STREAM }}
           fi
 
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
           echo $REPO_NAME
-          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT   
 
   static-analysis:
     name: Analysis code quality
-    needs: [initial-tasks]
     uses: backend-sw-development-team4/.github/.github/workflows/static-analysis.yaml@main
+    needs: [initial-tasks]
     with:
       REPO_NAME: ${{ needs.initial-tasks.outputs.REPO_NAME }}
-      BUILD_PATH: ${{ inputs.BUILD_PATH }}
+      BUILD_PATH: ${{ inputs.ANALYSIS_PATH }}
       QUALITY_REPORT: ${{ inputs.QUALITY_REPORT }}
       DISPATCH: true
       BRANCH: ${{ inputs.BRANCH }}
       STREAM: ${{ inputs.STREAM }}
-    secrets: inherit
+      environment: ${{ github.ref_name }}
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
