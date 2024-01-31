@@ -22,4 +22,4 @@ jobs:
       - name: Check assumed result # Test Assume Role Result
         run: |
           aws sts get-caller-identity
-          aws s3 ls
+          aws s3 ls mopl-common-p-an2
