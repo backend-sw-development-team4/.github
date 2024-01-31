@@ -114,8 +114,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.HWVSORG_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.HWVSORG_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.TEAM4_OIDC_ROLE }}
+          role-session-name: GitHub-Actions-Assume
           aws-region: ${{ inputs.region }}
 
       # Assume to Each Account as AWSControlTowerExecution
