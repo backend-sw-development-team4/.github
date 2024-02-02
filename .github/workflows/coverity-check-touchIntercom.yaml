@@ -24,7 +24,14 @@ on:
       DEPLOY:
         required: false
         default: 'development'
-        type: string
+      GH_MANAGEPACKAGE_TOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used."
+        
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used."
 
 jobs:
   TouchInterCOM-:
