@@ -124,7 +124,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.TEAM4_OIDC_ROLE }}
           role-session-name: GitHub-Actions-Assume
-          aws-region: ap-northeast-2
+          aws-region: us-east-1
 
       # Assume to Each Account as AWSControlTowerExecution
       - name: Push build artifact to S3 Bucket and invalidation CloudFront
@@ -290,7 +290,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.TEAM4_OIDC_ROLE }}
           role-session-name: GitHub-Actions-Assume
-          aws-region: ap-northeast-2
+          aws-region: us-east-1
 
       # Assume to Each Account as AWSControlTowerExecution
       - name: Push build artifact to S3 Bucket and invalidation CloudFront
