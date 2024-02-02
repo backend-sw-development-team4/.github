@@ -114,7 +114,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ secrets.TEAM4_OIDC_ROLE }}
+          role-to-assume: arn:aws:iam::619268642609:role/TEAM4-admin-automation
           role-session-name: GitHub-Actions-Assume
           aws-region: ${{ inputs.region }}
 
