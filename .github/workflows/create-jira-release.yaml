@@ -56,6 +56,8 @@ on:
         type: string
         default: "EXPTNFYJG8CR8"
 
+permissions: write-all
+
 jobs:
   initial_setting:
     outputs:
@@ -122,9 +124,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::619268642609:role/TEAM4-admin-automation
+          role-to-assume: ${{ secrets.TEAM4_OIDC_ROLE }}
           role-session-name: GitHub-Actions-Assume
-          aws-region: us-east-1
+          aws-region: ap-northeast-2
 
       # Assume to Each Account as AWSControlTowerExecution
       - name: Push build artifact to S3 Bucket and invalidation CloudFront
@@ -288,9 +290,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::619268642609:role/TEAM4-admin-automation
+          role-to-assume: ${{ secrets.TEAM4_OIDC_ROLE }}
           role-session-name: GitHub-Actions-Assume
-          aws-region: us-east-1
+          aws-region: ap-northeast-2
 
       # Assume to Each Account as AWSControlTowerExecution
       - name: Push build artifact to S3 Bucket and invalidation CloudFront
