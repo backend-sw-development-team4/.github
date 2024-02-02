@@ -65,8 +65,7 @@ jobs:
   gitops-release:
     runs-on: ubuntu-latest
     environment: 
-      #name: ${{ inputs.environment_name }}
-      name: release
+      name: ${{ inputs.environment_name }}
     name: GitOps Release
     steps:
       - name: Checkout
