@@ -24,6 +24,7 @@ on:
       DEPLOY:
         required: false
         default: 'development'
+        type: string
         
     secrets:
       GH_MANAGEPACKAGE_TOKEN:
