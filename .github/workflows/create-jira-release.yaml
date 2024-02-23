@@ -120,6 +120,15 @@ jobs:
           cmd: |
             yq -i '.["MainVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
 
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "ci: deploy mopl prod for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
+
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -142,16 +151,6 @@ jobs:
 
           # Setting CloudFront
           aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*"
-
-
-      - name: Commit changes
-        run: |
-          git config user.name "GitHub Actions Bot" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit -m "ci: deploy mopl prod for ${{ inputs.release_version }}" && \
-          git push origin main
-        continue-on-error: true
 
       - name: Create Github Release
         uses: actions/create-release@v1
