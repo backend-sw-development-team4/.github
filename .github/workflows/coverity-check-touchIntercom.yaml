@@ -94,7 +94,7 @@ jobs:
           environment: ${{ inputs.DEPLOY }}     
 
       - name: coverity
-        if: inputs.QUALITY_REPORT == true
+        if: inputs.QUALITY_REPORT == 'true'
         run: |
           echo "CI_STEP_StaticAnalysis"
           echo $ANDROID_HOME
