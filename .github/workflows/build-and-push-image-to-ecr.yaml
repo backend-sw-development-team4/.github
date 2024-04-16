@@ -49,7 +49,7 @@ on:
       GH_MANAGEPACKAGE_TOKEN:
         required: true
       MOPL_CODEFREEZE:
-        required: true
+        required: false
       MOPL_AWS_ACCESS_KEY_ID:
         required: true
       MOPL_AWS_SECRET_ACCESS_KEY:
