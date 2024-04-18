@@ -145,5 +145,4 @@ jobs:
           git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
           git pull origin main && \
           git push origin main
-        continue-on-error: true
 
