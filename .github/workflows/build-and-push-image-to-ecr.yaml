@@ -97,9 +97,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: ${{ inputs.ecr_region }}
-          aws-access-key-id: ${{ secrets.MOPL_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.MOPL_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions
+          aws-region: ap-northeast-2
 
       - name: Login to Amazon ECR
         id: login-ecr
