@@ -1,46 +1,14 @@
-## PR Checklist
-Please check if your PR fulfills the following requirements:
+## 추가/수정된 구성 요소 / Name of Component Added/Modified
+<!--- 변경 사항을 간단히 작성해 주세요 / Describe your changes in detail here -->
 
-- [ ] The commit message follows our guidelines: https://www.conventionalcommits.org/en/v1.0.0/
-- [ ] Tests for the changes have been added (for bug fixes / features)
-- [ ] Docs have been added / updated (for bug fixes / features)
+### 변경 유형 / Types of Changes
+<!--- 어떠한 유형의 변경이 이루어졌나요? / What types of changes does your code introduce? -->
+- [ ] 핵심 / Core
+- [ ] 버그 수정 / Bugfix
+- [ ] 새 구성 요소 / New component
+- [ ] 개선/최적화 / Enhancement/optimization
+- [ ] 문서 / Documentation
+- [ ] 테스트 / Test
 
-
-## PR Type
-What kind of change does this PR introduce?
-
-<!-- Please check the one that applies to this PR using "x". -->
-
-- [ ] Bugfix
-- [ ] Feature
-- [ ] Code style update (formatting, local variables)
-- [ ] Refactoring (no functional changes, no api changes)
-- [ ] Build related changes
-- [ ] CI related changes
-- [ ] Documentation content changes
-- [ ] Other... Please describe:
-
-## Do hardcodes exist in this PR? 
-- [X] Yes
-- [ ] No
-
-
-## What is the current behavior?
-<!-- Please describe the current behavior that you are modifying, or link to a relevant issue. -->
-
-Issue Number: N/A
-
-
-## What is the new behavior?
-
-
-## Does this PR introduce a breaking change?
-
-- [ ] Yes
-- [ ] No
-
-
-<!-- If this PR contains a breaking change, please describe the impact and migration path for existing applications below. -->
-
-
-## Other information
+### Related jira issues
+* 
