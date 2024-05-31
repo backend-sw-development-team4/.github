@@ -275,7 +275,7 @@ jobs:
               yq -i '
                 .images[0].newName = "'$image_repo'" |
                 .images[0].newTag = "'$image_tag'"
-              ' ./$service_name/env/prod/kustomization.yaml
+              ' ./$service_name/env/prod/kustomization.yaml || true
             fi
           done < prod_version.yaml
 
