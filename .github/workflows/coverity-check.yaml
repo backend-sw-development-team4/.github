@@ -57,8 +57,8 @@ jobs:
 
           mkdir $COVERITY_CONFIG
           mkdir $COVERITY_INTERMEDIATE
-          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --javascript
-          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --typescript
+          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --javascript --xml-option=skip_file:./test/*
+          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --typescript --xml-option=skip_file:./test/*
           
           APP_REVISION=`git rev-parse --short HEAD`;
           ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ inputs.repository_name }} --no-command
