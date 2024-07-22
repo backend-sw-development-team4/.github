@@ -85,12 +85,12 @@ jobs:
           echo "version=${{ steps.version.outputs.version }}"
 
   dev-build-and-push-ecr:
-    if: ${{ vars.ENV  == 'dev' }}
-    name: Container image build and push to ecr
+    name: Container image build and push to ecr for dev
     runs-on: ubuntu-latest
     environment: 
       name: ${{ inputs.environment_name }}
     needs: create-tag
+    if: ${{ vars.ENV  == 'dev' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -132,12 +132,12 @@ jobs:
             "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
 
   qa-build-and-push-ecr:
-    if: ${{ vars.ENV  == 'qa' }}
-    name: Container image build and push to ecr
+    name: Container image build and push to ecr for qa and prod
     runs-on: ubuntu-latest
     environment: 
       name: ${{ inputs.environment_name }}
     needs: create-tag
+    if: ${{ vars.ENV  == 'qa' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
