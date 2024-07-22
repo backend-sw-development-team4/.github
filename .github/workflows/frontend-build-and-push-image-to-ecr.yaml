@@ -115,7 +115,7 @@ jobs:
 
       - name: Set develop env file
         run: |
-          cp ./env/${{ vars.ENV }}/.env ./env
+          cp ./env/${{ vars.ENV }}/.env ./
 
       - name: Build, tag, and push image to Amazon ECR for DEV
         uses: docker/build-push-action@v5
@@ -162,7 +162,7 @@ jobs:
 
       - name: Set qa env file
         run: |
-          cp ./env/${{ vars.ENV }}/.env ./env
+          cp ./env/${{ vars.ENV }}/.env ./
 
       - name: Build, tag, and push image to Amazon ECR for QA
         uses: docker/build-push-action@v5
@@ -181,7 +181,7 @@ jobs:
       - name: Set prod env file
         run: |
           rm ./env
-          cp ./env/prod/.env ./env
+          cp ./env/prod/.env ./
 
       - name: Build, tag, and push image to Amazon ECR for PROD
         uses: docker/build-push-action@v5
