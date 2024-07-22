@@ -132,7 +132,7 @@ jobs:
             "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
 
   qa-build-and-push-ecr:
-    if: if: ${{ vars.ENV  == 'qa' }}
+    if: ${{ vars.ENV  == 'qa' }}
     name: Container image build and push to ecr
     runs-on: ubuntu-latest
     environment: 
