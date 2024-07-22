@@ -90,7 +90,7 @@ jobs:
     environment: 
       name: ${{ inputs.environment_name }}
     needs: create-tag
-    if: ${{ vars.ENV  == 'dev' }}
+    if: ${{ inputs.environment_name  == 'dev' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -137,7 +137,7 @@ jobs:
     environment: 
       name: ${{ inputs.environment_name }}
     needs: create-tag
-    if: ${{ vars.ENV  == 'qa' }}
+    if: ${{ inputs.environment_name  == 'qa' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
