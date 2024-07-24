@@ -83,7 +83,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: cloud-development-team/${{ inputs.release_repo }}
+          repository: backend-sw-development-team4/${{ inputs.release_repo }}
           ref: ${{ inputs.release_version }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       - name: Setup pnpm

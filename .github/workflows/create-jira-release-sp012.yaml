@@ -35,7 +35,7 @@ jobs:
         run: |
           if [ ${{ inputs.jira_key }}  == "RMR" ]; then
             if grep -q "sh_gw" <<<"${{ inputs.release_version }}"; then
-              repo=saasportal-cicd-test
+              repo=saleshub-gateway
               branch=release
             elif grep -q "sh_be" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-backend
@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: cloud-development-team/${{ needs.initial_setting.outputs.repo }}
+          repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
           ref: refs/heads/${{ needs.initial_setting.outputs.branch }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
