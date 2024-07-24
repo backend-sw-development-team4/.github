@@ -105,6 +105,6 @@ jobs:
       qa_aws_account: '060636281042'
       prod_aws_account: '497796310523'
       dev_aws_account: '540528117317'
-      s3_prefix: gateway-test
+      s3_prefix: gateway
     secrets: inherit   
     
