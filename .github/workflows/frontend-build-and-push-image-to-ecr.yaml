@@ -180,7 +180,7 @@ jobs:
 
       - name: Set prod env file
         run: |
-          rm ./env
+          rm ./.env
           cp ./env/prod/.env ./
 
       - name: Build, tag, and push image to Amazon ECR for PROD
