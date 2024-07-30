@@ -86,20 +86,24 @@ jobs:
           repository: backend-sw-development-team4/${{ inputs.release_repo }}
           ref: ${{ inputs.release_version }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
+
       - name: Install dependencies
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm install
+
       - name: Build
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm run build
           echo "================"
           ls -al 
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -110,10 +114,21 @@ jobs:
       - name: Push build artifact to S3 Bucket
         working-directory: ${{ inputs.working_dir }}
         run: |
-          env_script="aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/env ."
+          # Check if env file exists in the specific release version path
+          if ! aws s3 ls s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env > /dev/null 2>&1; then
+            aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/env s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env
+            echo "default env copy done"
+          else
+            echo "env already exists. No need to copy."
+          fi
+
+          # Change Codedeploy script
+          env_script="aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env ."
           sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
+
+          # Deploy
           zip -qry deploy.zip .
-          aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors 
+          aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
 
   prod-deploy:
     name: Prod Deploy
@@ -124,26 +139,43 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::497796310523:role/role-sp012-prod-github-ci
+          role-to-assume: arn:aws:iam::060636281042:role/role-sp012-qa-github-ci
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
+
       - name: Get QA code from S3 Bucket
         working-directory: ${{ inputs.working_dir }}
         run: |
           aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip . --only-show-errors 
+
       - name: ReConfigure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-to-assume: arn:aws:iam::497796310523:role/role-sp012-prod-github-ci
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
+          
       - name: Push to S3 Bucket
         run: |
+          # Unzip qa deploy.zip
           unzip -oq deploy.zip
           rm env deploy.zip
+
+          # Check if env file exists in the specific release version path
+          if ! aws s3 ls s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env > /dev/null 2>&1; then
+            aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env
+            echo "default env copy done"
+          else
+            echo "env already exists. No need to copy."
+          fi
+
+          # Change Codedeploy script
+          env_script="aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env ."
           sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
+          
+          # Deploy
           zip -qry deploy.zip .
-          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors
+          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
 
 
   hotfix-deploy:
@@ -158,21 +190,37 @@ jobs:
           role-to-assume: arn:aws:iam::540528117317:role/role-sp012-dev-github-ci
           role-session-name: GitHub-Actions-Assume
           aws-region: ap-northeast-2
+
       - name: Get Hitfix code from S3 Bucket
         working-directory: ${{ inputs.working_dir }}
         run: |
-          aws s3 cp s3://${{ inputs.dev_s3_bucket }}/hotfix/${{ inputs.s3_prefix }}/deploy.zip . --only-show-errors 
+          aws s3 cp s3://${{ inputs.dev_s3_bucket }}/${{ inputs.s3_prefix }}/hotfix/deploy.zip . --only-show-errors 
+
       - name: ReConfigure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::497796310523:role/role-sp012-prod-github-ci
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
+
       - name: Push to S3 Bucket
         run: |
+          # Unzip qa deploy.zip
           unzip -oq deploy.zip
           rm env deploy.zip
-          env_script="aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env ."
+
+          # Check if env file exists in the specific release version path
+          if ! aws s3 ls s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env > /dev/null 2>&1; then
+            aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env
+            echo "default env copy done"
+          else
+            echo "env already exists. No need to copy."
+          fi
+
+          # Change Codedeploy script
+          env_script="aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env ."
           sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
+          
+          # Deploy
           zip -qry deploy.zip .
-          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors
+          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
