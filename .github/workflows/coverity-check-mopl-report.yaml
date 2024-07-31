@@ -23,22 +23,22 @@ jobs:
         username: jenkins
         password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
   
-name: Quality Check non-compile Project
-strategy:
-  matrix:
-    non-compile_Project: [mopl-admin, mopl-apartment-service, mopl-audit-service, mopl-authn-service, mopl-batch-service, mopl-community-service, mopl-device-service, mopl-user-service, mopl-vote-service, mopl-user-app]
-    compile_Project: [mopl-user-app-android, mopl-user-IOS, mopl-Apartment-guard-app]
-steps:
-  - name: Coverity non-compile Project Report 
-    run: |
-      echo "CI_STEP_CoverityReport"
-      for project in "${{ matrix.non-compile_Project }}"; do
-        python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$project"
-      done
+    name: Quality Check non-compile Project
+    strategy:
+      matrix:
+        non-compile_Project: [mopl-admin, mopl-apartment-service, mopl-audit-service, mopl-authn-service, mopl-batch-service, mopl-community-service, mopl-device-service, mopl-user-service, mopl-vote-service, mopl-user-app]
+        compile_Project: [mopl-user-app-android, mopl-user-IOS, mopl-Apartment-guard-app]
+    steps:
+      - name: Coverity non-compile Project Report 
+        run: |
+          echo "CI_STEP_CoverityReport"
+          for project in "${{ matrix.non-compile_Project }}"; do
+            python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$project"
+          done
 
-  - name: Coverity compile Project Report 
-    run: |
-      echo "CI_STEP_CoverityReport"
-      for project in "${{ matrix.compile_Project }}"; do
-        python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud compile "$project"
-      done
+      - name: Coverity compile Project Report 
+        run: |
+          echo "CI_STEP_CoverityReport"
+          for project in "${{ matrix.compile_Project }}"; do
+            python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud compile "$project"
+          done
