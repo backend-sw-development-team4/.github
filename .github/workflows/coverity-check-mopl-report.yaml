@@ -1,4 +1,4 @@
-name: source code quality check
+name: source code quality check mopl all service
 
 on:
   workflow_call:
@@ -37,6 +37,10 @@ jobs:
         password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
   
     name: Quality Check
+    strategy:
+      matrix:
+        non-compile_Project: [mopl-admin, mopl-apartment-service, mopl-audit-service, mopl-authn-service, mopl-batch-service, mopl-community-service, mopl-device-service, mopl-user-service, mopl-vote-service, mopl-user-app]
+        compile_Project: [mopl-user-app-android, mopl-user-IOS, mopl-Apartment-guard-app]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -45,38 +49,12 @@ jobs:
           path: ./${{ inputs.repository_name }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
-      - name: coverity
-        working-directory: ./${{ inputs.repository_name }}
-        run: |
-          echo "CI_STEP_StaticAnalysis "          
-          STREAM="mopl-${{ inputs.repository_name }}"
-          CSA_DIR=/home/jenkins/cov-analysis
-          COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
-          COVERITY_CONFIG_XML=${GITHUB_WORKSPACE}/coverity_config/config.xml
-          COVERITY_INTERMEDIATE=${GITHUB_WORKSPACE}/coverity_emit_data
-
-          mkdir $COVERITY_CONFIG
-          mkdir $COVERITY_INTERMEDIATE
-          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --javascript --xml-option=skip_file:./test/*
-          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --typescript --xml-option=skip_file:./test/*
-          
-          APP_REVISION=`git rev-parse --short HEAD`;
-          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ inputs.repository_name }} --no-command
-          ${CSA_DIR}/bin/cov-analyze --aggressiveness-level high --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
-          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${{ secrets.CIM_USER }}:${{ secrets.CIM_PASSWD }}@${{ inputs.cim_server }} --ssl --stream ${STREAM} --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
-          max_try_count=10;
-          while ! ${cov_commit} && [ $max_try_count -ne 0 ]; do
-              echo "Remaining  try-count : ${max_try_count}";
-              max_try_count=$((max_try_count-1)); 
-              sleep 120;
-              if [ $max_try_count -eq "0" ] ; then
-                  echo "fail cov-commit";
-                  exit 1;
-              fi
-          done
-
-      - name: Coverity Report
-        #if: inputs.QUALITY_REPORT == true
+      - name: Coverity non-compile Project Report 
         run: |
           echo "CI_STEP_CoverityReport"
-          python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile mopl-${{ inputs.repository_name }}
+          python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile ${{ matrix.non-compile_Project }}
+
+      - name: Coverity compile Project Report 
+        run: |
+          echo "CI_STEP_CoverityReport"
+          python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud compile ${{ matrix.compile_Project }}
