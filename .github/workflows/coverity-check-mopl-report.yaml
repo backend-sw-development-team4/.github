@@ -33,7 +33,6 @@ jobs:
           echo "CI_STEP_CoverityReport"
           python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile ${{ matrix.non-compile_Project }}
 
-
   coverity-compile:
     environment: main
     runs-on: ubuntu-latest
@@ -51,7 +50,7 @@ jobs:
     name: Quality Check compile Project
     strategy:
       matrix:
-        compile_Project: [mopl-user-app-android, mopl-user-IOS, mopl-Apartment-guard-app]
+        compile_Project: [mopl-user-app-android, mopl-user-app-IOS, mopl-Apartment-guard-app]
     steps:
       - name: Coverity compile Project Report 
         run: |
