@@ -180,7 +180,7 @@ jobs:
 
   hotfix-deploy:
     name: Prod Deploy
-    if: startsWith( ${{ inputs.release_env }},  'hotfix')
+    if: ${{ startsWith(inputs.release_env, 'hotfix') }}
     runs-on: ubuntu-latest
     environment: main
     steps:
