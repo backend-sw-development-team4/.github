@@ -76,13 +76,11 @@ jobs:
           done
 
       - name: Coverity Report
-        if: ${{ inputs.repository_name }} != mopl-admin
         run: |
           echo "CI_STEP_CoverityReport"
-          python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile mopl-${{ inputs.repository_name }}
-
-      - name: Coverity Report
-        if: ${{ inputs.repository_name }} == mopl-admin
-        run: |
-          echo "CI_STEP_CoverityReport"
-          python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile ${{ inputs.repository_name }}
+          REPO_NAME="${{ inputs.repository_name }}"
+          if [[ "$REPO_NAME" == *"mopl"* ]]; then
+            python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$REPO_NAME"
+          else
+            python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "mopl-$REPO_NAME"
+          fi
