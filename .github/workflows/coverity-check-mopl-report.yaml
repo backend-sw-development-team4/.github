@@ -10,6 +10,7 @@ on:
 
 jobs:
   coverity:
+    environment: main
     runs-on: ubuntu-latest
 
     permissions:
