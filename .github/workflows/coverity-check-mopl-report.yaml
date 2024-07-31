@@ -1,6 +1,17 @@
 name: source code quality check mopl all service
 
 on:
+  workflow_dispatch:
+    inputs:
+      cim_server:
+        required: false
+        description: "Name of repository"
+        type: string
+        default: "cim.kdoggy.systems"
+      repository_name:
+        required: true
+        description: "Name of repository"
+        type: string
   workflow_call:
     inputs:
       cim_server:
@@ -16,12 +27,7 @@ on:
       GH_MANAGEPACKAGE_TOKEN:
         required: false
         description: "If not provided, the repo creds will be used."
-      CIM_PASSWD:
-        required: true
-        description: "If not provided, the repo creds will be used."
-      CIM_USER:
-        required: true
-        description: "If not provided, the repo creds will be used."
+        
 jobs:
   coverity:
     runs-on: ubuntu-latest
