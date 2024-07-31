@@ -179,7 +179,7 @@ jobs:
 
 
   hotfix-deploy:
-    name: Prod Deploy
+    name: Hotfix Deploy
     if: ${{ startsWith(inputs.release_env, 'hotfix') }}
     runs-on: ubuntu-latest
     environment: main
