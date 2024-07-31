@@ -30,7 +30,7 @@ jobs:
       deployments: write
 
     container:
-      image: ghcr.io/hanwhavision/coverity-github:1.0.0
+      image: ghcr.io/hanwhavision/coverity-github:1.0.1
       options: --user root
       credentials:
         username: jenkins
@@ -75,4 +75,8 @@ jobs:
               fi
           done
 
-          
+      - name: Coverity Report
+        if: inputs.QUALITY_REPORT == true
+        run: |
+          echo "CI_STEP_CoverityReport"
+          python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile mopl-${{ inputs.repository_name }}
