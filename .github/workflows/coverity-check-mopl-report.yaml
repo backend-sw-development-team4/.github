@@ -2,32 +2,12 @@ name: source code quality check mopl all service
 
 on:
   workflow_dispatch:
-    inputs:
-      cim_server:
-        required: false
-        description: "Name of repository"
-        type: string
-        default: "cim.kdoggy.systems"
-      repository_name:
-        required: true
-        description: "Name of repository"
-        type: string
   workflow_call:
-    inputs:
-      cim_server:
-        required: false
-        description: "Name of repository"
-        type: string
-        default: "cim.kdoggy.systems"
-      repository_name:
-        required: true
-        description: "Name of repository"
-        type: string
     secrets:
       GH_MANAGEPACKAGE_TOKEN:
         required: false
         description: "If not provided, the repo creds will be used."
-        
+
 jobs:
   coverity:
     runs-on: ubuntu-latest
@@ -48,13 +28,6 @@ jobs:
         non-compile_Project: [mopl-admin, mopl-apartment-service, mopl-audit-service, mopl-authn-service, mopl-batch-service, mopl-community-service, mopl-device-service, mopl-user-service, mopl-vote-service, mopl-user-app]
         compile_Project: [mopl-user-app-android, mopl-user-IOS, mopl-Apartment-guard-app]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          path: ./${{ inputs.repository_name }}
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-
       - name: Coverity non-compile Project Report 
         run: |
           echo "CI_STEP_CoverityReport"
