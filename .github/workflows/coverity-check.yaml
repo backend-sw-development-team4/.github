@@ -79,7 +79,7 @@ jobs:
         run: |
           echo "CI_STEP_CoverityReport"
           REPO_NAME="${{ inputs.repository_name }}"
-          if [[ "$REPO_NAME" == *"mopl"* ]]; then
+          if ${{ "$REPO_NAME" == *"mopl"* }}; then
             python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$REPO_NAME"
           else
             python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "mopl-$REPO_NAME"
