@@ -78,7 +78,8 @@ jobs:
       - name: Coverity Report
         run: |
           echo "CI_STEP_CoverityReport"
-          if: ${{ inputs.application_name == 'admin-frontend' || inputs.application_name == 'mopl-admin' }}
+          REPO_NAME="${{ inputs.repository_name }}"
+          if echo "$REPO_NAME" | grep -q "mopl"; then
             python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$REPO_NAME"
           else
             python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "mopl-$REPO_NAME"
