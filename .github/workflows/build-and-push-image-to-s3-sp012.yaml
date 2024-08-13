@@ -1,11 +1,7 @@
-name: Build with pnpm and Save Artifact to S3
+name: Build with pnpm or yarn and Save Artifact to S3
 
 on:
   workflow_call:
-    outputs:
-      version:
-        description: "Version number from semver"
-        value: ${{ jobs.pnpm-build.outputs.version }}
     inputs:
       working_dir:
         required: false
@@ -88,21 +84,37 @@ jobs:
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Setup pnpm
+        if: ${{ inputs.s3_prefix != 'backend' }}
         uses: pnpm/action-setup@v2
         with:
           version: 8
 
-      - name: Install dependencies
+      - name: Install dependencies pnpm
+        if: ${{ inputs.s3_prefix != 'backend' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm install
 
-      - name: Build
+      - name: Pnpm Build
+        if: ${{ inputs.s3_prefix != 'backend' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm run build
           echo "================"
           ls -al 
+
+      - name: Setup yarn
+        if: ${{ inputs.s3_prefix == 'backend' }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.12
+          cache: yarn
+
+      - name: Install dependencies yarn
+        if: ${{ inputs.s3_prefix == 'backend' }}
+        working-directory: ./
+        run: |
+          yarn install
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -159,7 +171,7 @@ jobs:
         run: |
           # Unzip qa deploy.zip
           unzip -oq deploy.zip
-          rm env deploy.zip
+          rm  deploy.zip
 
           # Check if env file exists in the specific release version path
           if ! aws s3 ls s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env > /dev/null 2>&1; then
@@ -178,49 +190,49 @@ jobs:
           aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
 
 
-  hotfix-deploy:
-    name: Hotfix Deploy
-    if: ${{ startsWith(inputs.release_env, 'hotfix') }}
-    runs-on: ubuntu-latest
-    environment: main
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::540528117317:role/role-sp012-dev-github-ci
-          role-session-name: GitHub-Actions-Assume
-          aws-region: ap-northeast-2
+  #hotfix-deploy:
+  #  name: Hotfix Deploy
+  #  if: ${{ startsWith(inputs.release_env, 'hotfix') }}
+  #  runs-on: ubuntu-latest
+  #  environment: main
+  #  steps:
+  #    - name: Configure AWS credentials
+  #      uses: aws-actions/configure-aws-credentials@v2
+  #      with:
+  #        role-to-assume: arn:aws:iam::540528117317:role/role-sp012-dev-github-ci
+  #        role-session-name: GitHub-Actions-Assume
+  #        aws-region: ap-northeast-2
 
-      - name: Get Hitfix code from S3 Bucket
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          aws s3 cp s3://${{ inputs.dev_s3_bucket }}/${{ inputs.s3_prefix }}/hotfix/deploy.zip . --only-show-errors 
+  #    - name: Get Hitfix code from S3 Bucket
+  #      working-directory: ${{ inputs.working_dir }}
+  #      run: |
+  #        aws s3 cp s3://${{ inputs.dev_s3_bucket }}/${{ inputs.s3_prefix }}/hotfix/deploy.zip . --only-show-errors 
 
-      - name: ReConfigure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::497796310523:role/role-sp012-prod-github-ci
-          role-session-name: GitHub-Actions-Assume
-          aws-region: us-east-1
+  #    - name: ReConfigure AWS credentials
+  #      uses: aws-actions/configure-aws-credentials@v2
+  #      with:
+  #        role-to-assume: arn:aws:iam::497796310523:role/role-sp012-prod-github-ci
+  #        role-session-name: GitHub-Actions-Assume
+  #        aws-region: us-east-1
 
-      - name: Push to S3 Bucket
-        run: |
+  #    - name: Push to S3 Bucket
+  #      run: |
           # Unzip qa deploy.zip
-          unzip -oq deploy.zip
-          rm env deploy.zip
+  #        unzip -oq deploy.zip
+  #        rm env deploy.zip
 
           # Check if env file exists in the specific release version path
-          if ! aws s3 ls s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env > /dev/null 2>&1; then
-            aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env
-            echo "default env copy done"
-          else
-            echo "env already exists. No need to copy."
-          fi
+  #        if ! aws s3 ls s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env > /dev/null 2>&1; then
+  #          aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env
+  #          echo "default env copy done"
+  #        else
+  #          echo "env already exists. No need to copy."
+  #        fi
 
           # Change Codedeploy script
-          env_script="aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env ."
-          sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
+  #        env_script="aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env ."
+  #        sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
           
           # Deploy
-          zip -qry deploy.zip .
-          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
+  #        zip -qry deploy.zip .
+  #        aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}

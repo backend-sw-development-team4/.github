@@ -27,6 +27,7 @@ jobs:
     outputs:
       repo: ${{ steps.set_env.outputs.repo }}
       branch: ${{ steps.set_env.outputs.branch }}
+      s3prefix: ${{ steps.set_env.outputs.s3prefix }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -37,20 +38,30 @@ jobs:
             if grep -q "sh_gw" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-gateway
               branch=release
+              s3prefix=gateway
             elif grep -q "sh_be" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-backend
               branch=release
+              s3prefix=backend
             elif grep -q "sh_fe" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-frontend
               branch=release
+              s3prefix=frontend
             elif grep -q "sh_li" <<<"${{ inputs.release_version }}"; then
               repo=license-server
               branch=release
+              s3prefix=license
+            fi
+            elif grep -q "sh_pa" <<<"${{ inputs.release_version }}"; then
+              repo=saleshub-payment
+              branch=release
+              s3prefix=payment
             fi
           fi
           
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "branch=$branch" >> $GITHUB_OUTPUT
+          echo "s3prefix=$s3prefix" >> $GITHUB_OUTPUT
   create-release:
     name: Create release
     needs: [initial_setting]
@@ -58,7 +69,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
-        if: ${{ inputs.release_env == 'QA' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -68,7 +78,6 @@ jobs:
 
 
       - name: Create Github Release
-        if: ${{ inputs.release_env == 'QA' }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
@@ -84,15 +93,14 @@ jobs:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
-        if: ${{ inputs.release_env == 'QA' }}
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
-  sp012-gateway:
-    if: startsWith( ${{ inputs.release_version }},  'sh_gw')
+  sp012-backend:
+    if: ${{ needs.initial_setting.outputs.s3prefix != 'frontend' }}
     needs: [initial_setting, create-release]
-    name: Gateway Deploy
+    name: Backend Module Deploy
     uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
     with:
       working_dir: ./
@@ -105,6 +113,12 @@ jobs:
       qa_aws_account: '060636281042'
       prod_aws_account: '497796310523'
       dev_aws_account: '540528117317'
-      s3_prefix: gateway
-    secrets: inherit   
+      s3_prefix: ${{ needs.initial_setting.outputs.s3prefix }}
+    secrets: inherit
+
+
+
+
+
+    
     
