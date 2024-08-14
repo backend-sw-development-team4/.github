@@ -51,7 +51,6 @@ jobs:
               repo=license-server
               branch=release
               s3prefix=license
-            fi
             elif grep -q "sh_pa" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-payment
               branch=release
