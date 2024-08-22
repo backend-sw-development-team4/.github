@@ -80,7 +80,7 @@ jobs:
         with:
           fetch-depth: 0
           repository: backend-sw-development-team4/${{ inputs.release_repo }}
-          ref: ${{ inputs.release_version }}
+          ref: refs/heads/release
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Setup pnpm
