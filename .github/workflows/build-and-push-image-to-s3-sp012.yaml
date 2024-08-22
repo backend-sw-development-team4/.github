@@ -136,7 +136,7 @@ jobs:
 
           # Change Codedeploy script
           env_script="aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env ."
-          sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
+          sed -i "/^aws s3 cp/ s|.*|${env_script}|" ./scripts/deploy.sh
 
           # Deploy
           zip -qry deploy.zip .
@@ -183,7 +183,7 @@ jobs:
 
           # Change Codedeploy script
           env_script="aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env ."
-          sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
+          sed -i "/^aws s3 cp/ s|.*|${env_script}|" ./scripts/deploy.sh
           
           # Deploy
           zip -qry deploy.zip .
