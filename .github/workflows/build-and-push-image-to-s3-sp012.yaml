@@ -95,7 +95,9 @@ jobs:
       - name: Install dependencies pnpm
         if: ${{ inputs.s3_prefix != 'backend' }}
         run: |
-          pnpm install
+          pnpm install --force
+          pnpm list
+          env
           echo "================"
           ls -al 
           pnpm build
