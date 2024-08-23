@@ -95,7 +95,7 @@ jobs:
           pnpm install
           echo "================"
           ls -al 
-          pnpm run build
+          pnpm build
 
       - name: Pnpm Build
         if: ${{ inputs.s3_prefix != 'backend' }}
