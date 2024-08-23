@@ -101,6 +101,8 @@ jobs:
         if: ${{ inputs.s3_prefix != 'backend' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
+          ls -al 
+          echo "================"
           pnpm run build
           echo "================"
           ls -al 
