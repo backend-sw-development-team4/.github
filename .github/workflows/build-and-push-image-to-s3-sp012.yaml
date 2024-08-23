@@ -94,6 +94,8 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm install
+          echo "================"
+          ls -al 
 
       - name: Pnpm Build
         if: ${{ inputs.s3_prefix != 'backend' }}
