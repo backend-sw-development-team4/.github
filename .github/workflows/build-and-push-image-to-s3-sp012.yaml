@@ -96,12 +96,9 @@ jobs:
           pnpm list
           env
           echo "================"
-          ls -al 
-          pnpm build
 
       - name: Pnpm Build
         if: ${{ inputs.s3_prefix != 'backend' }}
-        working-directory: ${{ inputs.working_dir }}
         run: |
           ls -al 
           echo "================"
