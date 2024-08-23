@@ -88,9 +88,6 @@ jobs:
         uses: pnpm/action-setup@v2
         with:
           version: 8
-
-      - name: Clear pnpm cache
-        run: pnpm store prune
         
       - name: Install dependencies pnpm
         if: ${{ inputs.s3_prefix != 'backend' }}
