@@ -63,11 +63,6 @@ on:
         required: true
         default: ""
         type: string
-      yaml_file:
-        description: 'Yaml file for dispatch'
-        required: false
-        default: ""
-        type: string
 
 permissions:
   id-token: write
@@ -95,10 +90,10 @@ jobs:
           REPO_OWNER: backend-sw-development-team4
           REPO_NAME: ${{ inputs.release_repo }}
           REF_NAME: release
-          YAML_FILE: ${{ inputs.yaml_file }}
           WORKING_DIR: ./
+          RELEASE_VERSION: ${{ inputs.release_version }}
         run: |
-          curl -X POST -H "Authorization: Bearer ${PAT_TOKEN}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${YAML_FILE}/dispatches"  -d '{"ref":"refs/heads/release", "inputs": {"working_dir": "${WORKING_DIR}"}}'
+          curl -X POST -H "Authorization: Bearer ${PAT_TOKEN}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/jira_release_build_release.yml/dispatches"  -d '{"ref":"refs/heads/release", "inputs": {"working_dir": "${WORKING_DIR}", "release_version": "${RELEASE_VERSION}"}}'
         
       
 
