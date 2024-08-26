@@ -92,7 +92,7 @@ jobs:
           REF_NAME: release
           WORKING_DIR: ./
         run: |
-          curl -X POST -H "Authorization: Bearer $PAT_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/jira_release_build_release.yml/dispatches" -d '{"ref":"refs/heads/release", "inputs": {"working_dir": "./"}}'
+          curl -X POST -H "Authorization: Bearer ${PAT_TOKEN}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/jira_release_build_release.yml/dispatches" -d '{"ref":"refs/heads/release", "inputs": {"working_dir": "./"}}'
         
       
 
