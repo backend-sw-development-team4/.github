@@ -28,7 +28,6 @@ jobs:
       repo: ${{ steps.set_env.outputs.repo }}
       branch: ${{ steps.set_env.outputs.branch }}
       s3prefix: ${{ steps.set_env.outputs.s3prefix }}
-      yaml_file: ${{ steps.set_env.outputs.yaml_file}}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -40,12 +39,10 @@ jobs:
               repo=saleshub-gateway
               branch=release
               s3prefix=gateway
-              yaml_file=job_build_release.yml
             elif grep -q "sh_be" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-backend
               branch=release
               s3prefix=backend
-              yaml_file=none
             elif grep -q "sh_fe" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-frontend
               branch=release
@@ -54,19 +51,16 @@ jobs:
               repo=license-server
               branch=release
               s3prefix=license
-              yaml_file=job_build_release.yml
             elif grep -q "sh_pa" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-payment
               branch=release
               s3prefix=payment
-              yaml_file=job_build_release.yaml
             fi
           fi
           
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "s3prefix=$s3prefix" >> $GITHUB_OUTPUT
-          echo "yaml_file=$yaml_file" >> $GITHUB_OUTPUT
   create-release:
     name: Create release
     needs: [initial_setting]
@@ -119,7 +113,6 @@ jobs:
       prod_aws_account: '497796310523'
       dev_aws_account: '540528117317'
       s3_prefix: ${{ needs.initial_setting.outputs.s3prefix }}
-      yaml_file: ${{ needs.initial_setting.outputs.yaml_file }}
     secrets: inherit
 
 
