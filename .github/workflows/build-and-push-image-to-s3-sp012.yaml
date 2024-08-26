@@ -83,28 +83,22 @@ jobs:
           ref: refs/heads/release
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
-      - name: Setup pnpm
+      - name: Pnpn build release
         if: ${{ inputs.s3_prefix != 'backend' }}
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        env:
+          PAT_TOKEN: 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
+          REPO_OWNER: backend-sw-development-team4
+          REPO_NAME: ${{ inputs.release_repo }}
+          REF_NAME: release
+          WORKING_DIR: ./
+        run: |
+          curl -X POST \
+            -H "Authorization: token $PAT_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/dispatches" \
+            -d '{"event_type":"jira-release", "client_payload": {"ref_name": "${REF_NAME}", "working_dir": "${WORKING_DIR}"}}'
         
-      - name: Install dependencies pnpm
-        if: ${{ inputs.s3_prefix != 'backend' }}
-        run: |
-          pnpm install --force
-          pnpm list
-          env
-          echo "================"
-
-      - name: Pnpm Build
-        if: ${{ inputs.s3_prefix != 'backend' }}
-        run: |
-          ls -al 
-          echo "================"
-          pnpm run build
-          echo "================"
-          ls -al 
+      
 
       - name: Setup yarn
         if: ${{ inputs.s3_prefix == 'backend' }}
@@ -120,6 +114,7 @@ jobs:
           yarn install
 
       - name: Configure AWS credentials
+        if: ${{ inputs.s3_prefix == 'backend' }}
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::060636281042:role/role-sp012-qa-github-ci
@@ -127,6 +122,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Push build artifact to S3 Bucket
+        if: ${{ inputs.s3_prefix == 'backend' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           # Check if env file exists in the specific release version path
