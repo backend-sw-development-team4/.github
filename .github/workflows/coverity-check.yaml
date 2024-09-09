@@ -31,7 +31,7 @@ jobs:
       deployments: write
 
     container:
-      image: ghcr.io/hanwhavision/coverity-github:1.0.1
+      image: ghcr.io/hanwhavision/coverity-github:1.0.2
       options: --user root
       credentials:
         username: jenkins
