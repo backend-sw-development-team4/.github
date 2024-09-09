@@ -25,7 +25,8 @@ on:
 jobs:
   coverity:
     runs-on: ubuntu-latest
-
+    outputs:
+      COVERITY_ISSUE_COUNT: ${{ steps.report.outputs.COVERITY_ISSUE_COUNT }} 
     permissions:
       deployments: write
 
@@ -76,11 +77,46 @@ jobs:
           done
 
       - name: Coverity Report
+        id: report
         run: |
           echo "CI_STEP_CoverityReport"
           REPO_NAME="${{ inputs.repository_name }}"
           if echo "$REPO_NAME" | grep -q "mopl"; then
-            python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$REPO_NAME"
+            output=$(python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$REPO_NAME")
+            echo $output
+            defects_count=$(echo "$output" | grep "Defects Found" | sed 's/.*Defects Found : \([0-9]*\).*/\1/')
           else
-            python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "mopl-$REPO_NAME"
+            output=$(python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "mopl-$REPO_NAME"）
+            echo $output
+            defects_count=$(echo "$output" | grep "Defects Found" | sed 's/.*Defects Found : \([0-9]*\).*/\1/')
           fi
+          echo "COVERITY_ISSUE_COUNT=$defects_count" >> $GITHUB_OUTPUT
+
+  Update-gitops:
+    runs-on: ubuntu-latest
+    name: Update the Coverity results to GitOps
+    needs:
+      - coverity
+    steps:
+      - name: Checkout state repo
+        uses: actions/checkout@v3
+        with:
+          repository: backend-sw-development-team4/smartparking-gitops
+          path: ./gitops
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Update version information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.${{ inputs.repository_name }}.defects_count = "${{ needs.coverity.outputs.COVERITY_ISSUE_COUNT }}"' ./gitops/coverity_report.yaml
+
+      - name: Commit changes
+        working-directory: ./gitops
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "chore: update ${{ inputs.repository_name }} Coverity results " && \
+          git pull origin main --rebase && \
+          git push origin main
