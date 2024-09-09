@@ -83,13 +83,12 @@ jobs:
           REPO_NAME="${{ inputs.repository_name }}"
           if echo "$REPO_NAME" | grep -q "mopl"; then
             output=$(python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$REPO_NAME")
-            echo $output
-            defects_count=$(echo "$output" | grep "Defects Found" | sed 's/.*Defects Found : \([0-9]*\).*/\1/')
           else
             output=$(python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "mopl-$REPO_NAME"）
-            echo $output
-            defects_count=$(echo "$output" | grep "Defects Found" | sed 's/.*Defects Found : \([0-9]*\).*/\1/')
           fi
+          
+          echo $output
+          defects_count=$(echo "$output" | grep "Defects Found" | sed 's/.*Defects Found : \([0-9]*\).*/\1/')
           echo "COVERITY_ISSUE_COUNT=$defects_count" >> $GITHUB_OUTPUT
 
   Update-gitops:
