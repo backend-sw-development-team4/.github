@@ -279,11 +279,17 @@ jobs:
             fi
           done < prod_version.yaml
 
-      - name: fix mopl-admin image tag
+      - name: set mopl-admin prod image tag
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
             yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./mopl-admin/env/prod/kustomization.yaml
+
+      - name: set store-front prod image tag
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./store-front/env/prod/kustomization.yaml
 
       - name: check image name and tag
         run: |
