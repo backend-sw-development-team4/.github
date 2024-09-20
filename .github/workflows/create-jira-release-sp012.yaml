@@ -28,6 +28,7 @@ jobs:
       repo: ${{ steps.set_env.outputs.repo }}
       branch: ${{ steps.set_env.outputs.branch }}
       s3prefix: ${{ steps.set_env.outputs.s3prefix }}
+      cloudfront_distribution_id: ${{ steps.set_env.outputs.cloudfront_distribution_id }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -47,6 +48,20 @@ jobs:
               repo=saleshub-frontend
               branch=release
               s3prefix=frontend
+              if ${{ inputs.release_env }} == "QA"; then
+                cloudfront_distribution_id=E3H96P9LID60CL   
+              else  
+                cloudfront_distribution_id=EJGVL5C56392T
+              fi
+            elif grep -q "sh_lf" <<<"${{ inputs.release_version }}"; then
+              repo=license-frontend
+              branch=release
+              s3prefix=license-frontend
+              if ${{ inputs.release_env }} == "QA"; then
+                cloudfront_distribution_id=E3PUAJVJR1OPA9  
+              else  
+                cloudfront_distribution_id=E355ZCEVPRO90V
+              fi
             elif grep -q "sh_li" <<<"${{ inputs.release_version }}"; then
               repo=license-server
               branch=release
@@ -134,11 +149,34 @@ jobs:
       qa_aws_account: '060636281042'
       prod_aws_account: '497796310523'
       dev_aws_account: '540528117317'
+      s3_prefix: ${{ needs.initial_setting.outputs.s3prefix }}
+      cloudfront_distribution_id: ${{ needs.initial_setting.outputs.cloudfront_distribution_id }}
     secrets: inherit
 
 
 
 
-
+  sp012-license-frontend:
+    if: ${{ needs.initial_setting.outputs.s3prefix == 'license-frontend' }}
+    needs: [initial_setting, create-release]
+    name: Front Module Deploy
+    uses: ./.github/workflows/build-and-push-view-to-s3-sp012.yaml
+    with:
+      working_dir: ./
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ inputs.release_env }}
+      release_repo: ${{ needs.initial_setting.outputs.repo }}
+      qa_s3_bucket: sp012-build-q-ue1
+      qa_front_s3_bucket: sp012-licenseview-q-ue1
+      prod_s3_bucket: sp012-build-p-ue1
+      prod_front_s3_bucket: sp012-licenseview-p-ue1
+      dev_front_s3_bucket: sp012-licenseview-d-an2-001
+      dev_s3_bucket: sp012-build-d-an2-001
+      qa_aws_account: '060636281042'
+      prod_aws_account: '497796310523'
+      dev_aws_account: '540528117317'
+      s3_prefix: ${{ needs.initial_setting.outputs.s3prefix }}
+      cloudfront_distribution_id: ${{ needs.initial_setting.outputs.cloudfront_distribution_id }}
+    secrets: inherit
     
     

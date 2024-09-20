@@ -73,6 +73,16 @@ on:
         required: false
         default: ""
         type: string 
+      cloudfront_distribution_id:
+        description: 'Cloudfront Distribution ID'
+        required: false
+        default: ""
+        type: string
+      s3_prefix:
+        description: 'S3 prefix for deploy.zip'
+        required: true
+        default: ""
+        type: string
 
 permissions:
   id-token: write
@@ -92,18 +102,43 @@ jobs:
           ref: refs/heads/release
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
+      - name: Setup pnpm
+        if: ${{ inputs.s3_prefix != 'frontend' }}
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install pnpm dependencies
+        if: ${{ inputs.s3_prefix != 'frontend' }}
+        working-directory: ./
+        run: |
+          pnpm install
+      
+      - name: Pnpm build
+        if: ${{ inputs.s3_prefix != 'frontend' }}
+        working-directory: ./
+        run: |
+          if [ ${{ inputs.release_env }}  == "QA" ]; then
+            pnpm run build:qa
+          elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+            pnpm run build:prod
+          fi
+
       - name: Setup yarn
+        if: ${{ inputs.s3_prefix == 'frontend' }}
         uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: yarn
       
       - name: Install dependencies yarn
+        if: ${{ inputs.s3_prefix == 'frontend' }}
         working-directory: ./
         run: |
           yarn install
       
-      - name: Build
+      - name: Yarn Build
+        if: ${{ inputs.s3_prefix == 'frontend' }}
         working-directory: ./
         run: |
           if [ ${{ inputs.release_env }}  == "QA" ]; then
@@ -112,7 +147,7 @@ jobs:
             yarn build:prod
           fi
       
-      - name: Configure PROD AWS credentials
+      - name: Configure QA AWS credentials
         if: ${{ inputs.release_env == 'QA' }}
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -120,7 +155,7 @@ jobs:
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
       
-      - name: Configure QA AWS credentials
+      - name: Configure PROD AWS credentials
         if: ${{ inputs.release_env == 'PROD' }}
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -128,8 +163,29 @@ jobs:
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
       
-      - name: Push to S3 Bucket
+      - name: Push to S3 Front Bucket
+        working-directory: ./
         run: |
          cd dist
          ls -al
+
+      - name: Creat CloudFront Invalidations
+        working-directory: ./
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront_distribution_id }} --paths "/*" 
+          
+      
+      - name: Push to S3 CICD Bucket
+        working-directory: ./
+        run: |
+         cd dist
+         ls -al
+         zip -qry frontend.zip .
+         if [ ${{ inputs.release_env }}  == "QA" ]; then
+            aws s3 cp frontend.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/frontend.zip --region us-east-1
+         elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+            aws s3 cp frontend.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/frontend.zip --region us-east-1
+         fi
+      
+         
          
