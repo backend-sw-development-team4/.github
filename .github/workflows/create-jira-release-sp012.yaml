@@ -118,7 +118,7 @@ jobs:
   sp012-frontend:
     if: ${{ needs.initial_setting.outputs.s3prefix == 'frontend' }}
     needs: [initial_setting, create-release]
-    name: Backend Module Deploy
+    name: Front Module Deploy
     uses: ./.github/workflows/build-and-push-view-to-s3-sp012.yaml
     with:
       working_dir: ./
