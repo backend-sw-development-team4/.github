@@ -112,5 +112,24 @@ jobs:
             yarn build:prod
           fi
       
+      - name: Configure PROD AWS credentials
+        if: ${{ inputs.release_env == 'QA' }}
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::060636281042:role/role-sp012-qa-github-ci
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
       
+      - name: Configure QA AWS credentials
+        if: ${{ inputs.release_env == 'PROD' }}
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::497796310523:role/role-sp012-prod-github-ci
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
       
+      - name: Push to S3 Bucket
+        run: |
+         cd dist
+         ls -al
+         
