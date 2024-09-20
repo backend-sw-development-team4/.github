@@ -57,7 +57,7 @@ jobs:
               repo=license-frontend
               branch=release
               s3prefix=license-frontend
-              if ${{ inputs.release_env }} == "QA"; then
+              if [ ${{ inputs.release_env }} == "QA" ]; then
                 cloudfront_distribution_id=E3PUAJVJR1OPA9  
               else  
                 cloudfront_distribution_id=E355ZCEVPRO90V
