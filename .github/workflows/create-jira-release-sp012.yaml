@@ -76,6 +76,7 @@ jobs:
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "s3prefix=$s3prefix" >> $GITHUB_OUTPUT
+          echo "cloudfront_distribution_id=$cloudfront_distribution_id" >> $GITHUB_OUTPUT
   create-release:
     name: Create release
     needs: [initial_setting]
@@ -112,7 +113,7 @@ jobs:
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
   sp012-backend:
-    if: ${{ needs.initial_setting.outputs.s3prefix != 'frontend' }}
+    if: ${{ needs.initial_setting.outputs.s3prefix != 'frontend' && needs.initial_setting.outputs.s3prefix != 'license-frontend' }}
     needs: [initial_setting, create-release]
     name: Backend Module Deploy
     uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
