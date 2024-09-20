@@ -102,18 +102,43 @@ jobs:
           ref: refs/heads/release
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
+      - name: Setup pnpm
+        if: ${{ inputs.s3_prefix != 'frontend' }}
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install pnpm dependencies
+        if: ${{ inputs.s3_prefix != 'frontend' }}
+        working-directory: ./
+        run: |
+          pnpm install
+      
+      - name: Pnpm build
+        if: ${{ inputs.s3_prefix != 'frontend' }}
+        working-directory: ./
+        run: |
+          if [ ${{ inputs.release_env }}  == "QA" ]; then
+            pnpm run build:qa
+          elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+            pnpm run build:prod
+          fi
+
       - name: Setup yarn
+        if: ${{ inputs.s3_prefix == 'frontend' }}
         uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: yarn
       
       - name: Install dependencies yarn
+        if: ${{ inputs.s3_prefix == 'frontend' }}
         working-directory: ./
         run: |
           yarn install
       
-      - name: Build
+      - name: Yarn Build
+        if: ${{ inputs.s3_prefix == 'frontend' }}
         working-directory: ./
         run: |
           if [ ${{ inputs.release_env }}  == "QA" ]; then
@@ -143,7 +168,7 @@ jobs:
         run: |
          cd dist
          ls -al
-         
+
       - name: Creat CloudFront Invalidations
         working-directory: ./
         run: |
