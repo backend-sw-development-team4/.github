@@ -48,7 +48,7 @@ jobs:
               repo=saleshub-frontend
               branch=release
               s3prefix=frontend
-              if ${{ inputs.release_env }} == "QA"; then
+              if [ ${{ inputs.release_env }} == "QA" ]; then
                 cloudfront_distribution_id=E3H96P9LID60CL   
               else  
                 cloudfront_distribution_id=EJGVL5C56392T
