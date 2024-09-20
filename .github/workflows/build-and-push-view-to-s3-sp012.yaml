@@ -72,12 +72,7 @@ on:
         description: 'DEV(hotfix) AWS Account'
         required: false
         default: ""
-        type: string
-      s3_prefix:
-        description: 'S3 prefix for deploy.zip'
-        required: true
-        default: ""
-        type: string
+        type: string 
 
 permissions:
   id-token: write
