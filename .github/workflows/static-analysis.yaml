@@ -64,7 +64,7 @@ jobs:
       ANALYSIS_PATH: ./${{ inputs.REPO_NAME }}/${{ inputs.BUILD_PATH }}
     
     container:
-        image: ghcr.io/hanwhavision/coverity-github:1.0.0
+        image: ghcr.io/hanwhavision/coverity-github:1.0.3
         options: --user root
         credentials:
           username: jenkins

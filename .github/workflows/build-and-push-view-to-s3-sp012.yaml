@@ -1,0 +1,121 @@
+name: Build with pnpm or yarn and Save Artifact to S3
+
+on:
+  workflow_call:
+    inputs:
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      pnpm_versions:
+        required: false
+        description: "pnpm version which want to use"
+        type: number
+        default: 8 
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
+      release_env:
+        description: 'Release Environment'
+        required: true
+        default: ""
+        type: string
+      release_repo:
+        description: 'Release Repository'
+        required: true
+        default: ""
+        type: string
+      prod_s3_bucket:
+        description: 'Prod env S3 Bucket Name'
+        required: true
+        default: ""
+        type: string
+      prod_front_s3_bucket:
+        description: 'Prod env Front S3 Bucket Name'
+        required: true
+        default: ""
+        type: string
+      prod_aws_account:
+        description: 'Prod AWS Account'
+        required: true
+        default: ""
+        type: string
+      qa_s3_bucket:
+        description: 'QA env S3 Bucket Name'
+        required: false
+        default: ""
+        type: string
+      qa_front_s3_bucket:
+        description: 'QA env Front S3 Bucket Name'
+        required: false
+        default: ""
+        type: string
+      qa_aws_account:
+        description: 'QA AWS Account'
+        required: false
+        default: ""
+        type: string
+      dev_s3_bucket:
+        description: 'DEV(hotfix) env S3 Bucket Name'
+        required: false
+        default: ""
+        type: string
+      dev_front_s3_bucket:
+        description: 'DEV(hotfix) env Front S3 Bucket Name'
+        required: false
+        default: ""
+        type: string
+      dev_aws_account:
+        description: 'DEV(hotfix) AWS Account'
+        required: false
+        default: ""
+        type: string
+      s3_prefix:
+        description: 'S3 prefix for deploy.zip'
+        required: true
+        default: ""
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-deploy:
+    name: Build Deploy
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: backend-sw-development-team4/${{ inputs.release_repo }}
+          ref: refs/heads/release
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Setup yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+      
+      - name: Install dependencies yarn
+        working-directory: ./
+        run: |
+          yarn install
+      
+      - name: Build
+        working-directory: ./
+        run: |
+          if [ ${{ inputs.release_env }}  == "QA" ]; then
+            yarn build:qa
+          elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+            yarn build:prod
+          fi
+      
+      
+      
