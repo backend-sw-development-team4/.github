@@ -51,6 +51,13 @@ jobs:
         run: |
           echo "CI_STEP_StaticAnalysis "          
           STREAM="mopl-${{ inputs.repository_name }}"
+
+          # Check if STREAM contains "mopl-mopl-"
+          if [[ "$STREAM" == *"mopl-mopl-"* ]]; then
+            # Replace "mopl-mopl-" with "mopl-" in STREAM
+            STREAM=${STREAM/"mopl-mopl-"/"mopl-"}
+          fi
+          
           CSA_DIR=/home/jenkins/cov-analysis
           COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
           COVERITY_CONFIG_XML=${GITHUB_WORKSPACE}/coverity_config/config.xml
