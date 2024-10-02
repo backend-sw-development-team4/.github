@@ -55,7 +55,7 @@ jobs:
           # Check if STREAM contains "mopl-mopl-"
           if echo "$STREAM" | grep -q "mopl-mopl-"; then
             # Replace "mopl-mopl-" with "mopl-" in STREAM
-            STREAM=${STREAM/"mopl-mopl-"/"mopl-"}
+            STREAM=$(echo "$STREAM" | sed 's/mopl-mopl-/mopl-/')
           fi
           echo $STREAM
 
