@@ -57,7 +57,8 @@ jobs:
             # Replace "mopl-mopl-" with "mopl-" in STREAM
             STREAM=${STREAM/"mopl-mopl-"/"mopl-"}
           fi
-          
+          echo $STREAM
+
           CSA_DIR=/home/jenkins/cov-analysis
           COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
           COVERITY_CONFIG_XML=${GITHUB_WORKSPACE}/coverity_config/config.xml
