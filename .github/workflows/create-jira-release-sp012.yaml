@@ -27,7 +27,7 @@ jobs:
     outputs:
       branch: ${{ steps.set_env.outputs.branch }}
       deploy_env: ${{ steps.set_env.outputs.deploy_env }}
-
+      env_list: ${{ steps.set_env.outputs.env_list }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [${{ needs.initial_setting.outputs.env_list }}]
+        env: [ ${{ needs.initial_setting.outputs.env_list }} ]
     steps:
       - name: Determine repository names
         id: determine-repos
