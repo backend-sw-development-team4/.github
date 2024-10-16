@@ -61,7 +61,7 @@ jobs:
         run: |
           if [ ${{ matrix.env }} == "gateway" ]; then
             if grep -q "gateway" <<<"${{ inputs.release_env }}"; then
-              echo "repo=saleshub-gateway"
+              repo=saleshub-gateway
             fi
           fi
           echo "repo=$repo" >> $GITHUB_OUTPUT
