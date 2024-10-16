@@ -27,7 +27,6 @@ jobs:
     outputs:
       branch: ${{ steps.set_env.outputs.branch }}
       deploy_env: ${{ steps.set_env.outputs.deploy_env }}
-
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -40,12 +39,7 @@ jobs:
             else 
               deploy_env=qa
             fi
-
-            valid_envs="license gateway backend frontend payment"
-            filtered_envs=$(echo "${{ inputs.release_env }}" | tr ',' ' ' | grep -Eo "($valid_envs)" | tr '\n' ',' | sed 's/,$//')
-            echo "Filtered environments: $filtered_envs"
-            echo "env_list=$filtered_envs" >> $GITHUB_OUTPUT"
-          fi
+        
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "deploy=$deploy_env" >> $GITHUB_OUTPUT
           
@@ -54,19 +48,24 @@ jobs:
     needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
+    outputs:
+      repo: ${{ steps.determine-repos.outputs.repo }}
     strategy:
       matrix:
-        env: [${{ needs.initial_setting.outputs.env_list }}]
+        env: ['license','gateway','backend','frontend','payment' ]
     steps:
       - name: Determine repository names
         id: determine-repos
         run: |
           if [ ${{ matrix.env }} == "gateway" ]; then
-            echo "repo=saleshub-gateway"
+            if grep -q "gateway" <<<"${{ inputs.release_env }}"; then
+              echo "repo=saleshub-gateway"
+            fi
           fi
           echo "repo=$repo" >> $GITHUB_OUTPUT
 
       - name: Checkout current repository
+        if: ${{ steps.determine-repos.outputs.repo != '' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -76,6 +75,7 @@ jobs:
 
 
       - name: Create Github Release
+        if: ${{ steps.determine-repos.outputs.repo != '' }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
@@ -91,6 +91,7 @@ jobs:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
+        if: ${{ steps.determine-repos.outputs.repo != '' }}
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
