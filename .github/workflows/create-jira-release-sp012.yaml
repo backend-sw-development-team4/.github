@@ -41,10 +41,10 @@ jobs:
               deploy_env=qa
               branch=release
             fi
+          fi
         
           echo "::set-output name=branch::$branch"
           echo "::set-output name=deploy_env::$deploy_env"
-          
   create-release:
     name: Create release
     needs: [initial_setting]
