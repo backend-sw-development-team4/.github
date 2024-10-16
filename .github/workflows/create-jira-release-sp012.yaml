@@ -54,7 +54,7 @@ jobs:
     needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
-     strategy:
+    strategy:
       matrix:
         env: [${{ needs.initial_setting.outputs.env_list }}]
     steps:
