@@ -25,10 +25,9 @@ on:
 jobs:
   initial_setting:
     outputs:
-      repo: ${{ steps.set_env.outputs.repo }}
       branch: ${{ steps.set_env.outputs.branch }}
-      s3prefix: ${{ steps.set_env.outputs.s3prefix }}
-      cloudfront_distribution_id: ${{ steps.set_env.outputs.cloudfront_distribution_id }}
+      deploy_env: ${{ steps.set_env.outputs.deploy_env }}
+
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -36,58 +35,42 @@ jobs:
         id: set_env
         run: |
           if [ ${{ inputs.jira_key }}  == "RMR" ]; then
-            if grep -q "sh_gw" <<<"${{ inputs.release_version }}"; then
-              repo=saleshub-gateway
-              branch=release
-              s3prefix=gateway
-            elif grep -q "sh_be" <<<"${{ inputs.release_version }}"; then
-              repo=saleshub-backend
-              branch=release
-              s3prefix=backend
-            elif grep -q "sh_fe" <<<"${{ inputs.release_version }}"; then
-              repo=saleshub-frontend
-              branch=release
-              s3prefix=frontend
-              if [ ${{ inputs.release_env }} == "QA" ]; then
-                cloudfront_distribution_id=E3H96P9LID60CL   
-              else  
-                cloudfront_distribution_id=EJGVL5C56392T
-              fi
-            elif grep -q "sh_lf" <<<"${{ inputs.release_version }}"; then
-              repo=license-frontend
-              branch=release
-              s3prefix=license-frontend
-              if [ ${{ inputs.release_env }} == "QA" ]; then
-                cloudfront_distribution_id=E3PUAJVJR1OPA9  
-              else  
-                cloudfront_distribution_id=E355ZCEVPRO90V
-              fi
-            elif grep -q "sh_li" <<<"${{ inputs.release_version }}"; then
-              repo=license-server
-              branch=release
-              s3prefix=license
-            elif grep -q "sh_pa" <<<"${{ inputs.release_version }}"; then
-              repo=saleshub-payment
-              branch=release
-              s3prefix=payment
+            if grep -q "PROD" <<<"${{ inputs.release_env }}"; then
+              deploy_env=prod
+            else 
+              deploy_env=qa
             fi
+
+            valid_envs="license gateway backend frontend payment"
+            filtered_envs=$(echo "${{ inputs.release_env }}" | tr ',' ' ' | grep -Eo "($valid_envs)" | tr '\n' ',' | sed 's/,$//')
+            echo "Filtered environments: $filtered_envs"
+            echo "env_list=$filtered_envs" >> $GITHUB_OUTPUT"
           fi
-          
-          echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "branch=$branch" >> $GITHUB_OUTPUT
-          echo "s3prefix=$s3prefix" >> $GITHUB_OUTPUT
-          echo "cloudfront_distribution_id=$cloudfront_distribution_id" >> $GITHUB_OUTPUT
+          echo "deploy=$deploy_env" >> $GITHUB_OUTPUT
+          
   create-release:
     name: Create release
     needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
+     strategy:
+      matrix:
+        env: [${{ needs.initial_setting.outputs.env_list }}]
     steps:
+      - name: Determine repository names
+        id: determine-repos
+        run: |
+          if [ ${{ matrix.env }} == "gateway" ]; then
+            echo "repo=saleshub-gateway"
+          fi
+          echo "repo=$repo" >> $GITHUB_OUTPUT
+
       - name: Checkout current repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
+          repository: backend-sw-development-team4/${{ steps.determine-repos.outputs.repo }}
           ref: refs/heads/${{ needs.initial_setting.outputs.branch }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
@@ -99,7 +82,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
-          repo: ${{ needs.initial_setting.outputs.repo }}
+          repo: ${{ steps.determine-repos.outputs.repo }}
           commitish: ${{ needs.initial_setting.outputs.branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
@@ -111,73 +94,3 @@ jobs:
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
-
-  sp012-backend:
-    if: ${{ needs.initial_setting.outputs.s3prefix != 'frontend' && needs.initial_setting.outputs.s3prefix != 'license-frontend' }}
-    needs: [initial_setting, create-release]
-    name: Backend Module Deploy
-    uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
-    with:
-      working_dir: ./
-      release_version: ${{ inputs.release_version }}
-      release_env: ${{ inputs.release_env }}
-      release_repo: ${{ needs.initial_setting.outputs.repo }}
-      qa_s3_bucket: sp012-build-q-ue1
-      prod_s3_bucket: sp012-build-p-ue1
-      dev_s3_bucket: sp012-build-d-an2-001
-      qa_aws_account: '060636281042'
-      prod_aws_account: '497796310523'
-      dev_aws_account: '540528117317'
-      s3_prefix: ${{ needs.initial_setting.outputs.s3prefix }}
-    secrets: inherit
-  
-  sp012-frontend:
-    if: ${{ needs.initial_setting.outputs.s3prefix == 'frontend' }}
-    needs: [initial_setting, create-release]
-    name: Front Module Deploy
-    uses: ./.github/workflows/build-and-push-view-to-s3-sp012.yaml
-    with:
-      working_dir: ./
-      release_version: ${{ inputs.release_version }}
-      release_env: ${{ inputs.release_env }}
-      release_repo: ${{ needs.initial_setting.outputs.repo }}
-      qa_s3_bucket: sp012-build-q-ue1
-      qa_front_s3_bucket: sp012-frontend-q-ue1
-      prod_s3_bucket: sp012-build-p-ue1
-      prod_front_s3_bucket: sp012-frontend-p-ue1
-      dev_front_s3_bucket: sp012-frontend-d-an2-001
-      dev_s3_bucket: sp012-build-d-an2-001
-      qa_aws_account: '060636281042'
-      prod_aws_account: '497796310523'
-      dev_aws_account: '540528117317'
-      s3_prefix: ${{ needs.initial_setting.outputs.s3prefix }}
-      cloudfront_distribution_id: ${{ needs.initial_setting.outputs.cloudfront_distribution_id }}
-    secrets: inherit
-
-
-
-
-  sp012-license-frontend:
-    if: ${{ needs.initial_setting.outputs.s3prefix == 'license-frontend' }}
-    needs: [initial_setting, create-release]
-    name: Front Module Deploy
-    uses: ./.github/workflows/build-and-push-view-to-s3-sp012.yaml
-    with:
-      working_dir: ./
-      release_version: ${{ inputs.release_version }}
-      release_env: ${{ inputs.release_env }}
-      release_repo: ${{ needs.initial_setting.outputs.repo }}
-      qa_s3_bucket: sp012-build-q-ue1
-      qa_front_s3_bucket: sp012-licenseview-q-ue1
-      prod_s3_bucket: sp012-build-p-ue1
-      prod_front_s3_bucket: sp012-licenseview-p-ue1
-      dev_front_s3_bucket: sp012-licenseview-d-an2-001
-      dev_s3_bucket: sp012-build-d-an2-001
-      qa_aws_account: '060636281042'
-      prod_aws_account: '497796310523'
-      dev_aws_account: '540528117317'
-      s3_prefix: ${{ needs.initial_setting.outputs.s3prefix }}
-      cloudfront_distribution_id: ${{ needs.initial_setting.outputs.cloudfront_distribution_id }}
-    secrets: inherit
-    
-    
