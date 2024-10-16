@@ -36,8 +36,10 @@ jobs:
           if [ ${{ inputs.jira_key }}  == "RMR" ]; then
             if grep -q "PROD" <<<"${{ inputs.release_env }}"; then
               deploy_env=prod
+              branch=release
             else 
               deploy_env=qa
+              branch=release
             fi
         
           echo "branch=$branch" >> $GITHUB_OUTPUT
