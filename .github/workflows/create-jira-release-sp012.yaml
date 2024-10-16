@@ -27,6 +27,11 @@ jobs:
     outputs:
       branch: ${{ steps.set_env.outputs.branch }}
       deploy_env: ${{ steps.set_env.outputs.deploy_env }}
+      frontend: ${{ steps.set_env.outputs.frontend }}
+      backend: ${{ steps.set_env.outputs.backend }}
+      payment: ${{ steps.set_env.outputs.payment }}
+      license: ${{ steps.set_env.outputs.license }}
+      gateway: ${{ steps.set_env.outputs.gateway }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -42,9 +47,31 @@ jobs:
               branch=release
             fi
           fi
+
+          if grep -q "frotend" <<<"${{ inputs.release_env }}"; then
+            frontend=deploy
+
+          elif grep -q "backend" <<<"${{ inputs.release_env }}"; then
+            backend=deploy
+          
+          elif grep -q "payment" <<<"${{ inputs.release_env }}"; then 
+            payment=deploy
+
+          elif grep -q "license" <<<"${{ inputs.release_env }}"; then
+            license=deploy
+
+          elif grep -q "gateway" <<<"${{ inputs.release_env }}"; then
+            gateway=deploy
+          fi
+
         
           echo "::set-output name=branch::$branch"
           echo "::set-output name=deploy_env::$deploy_env"
+          echo "::set-output name=frontend::$frontend"
+          echo "::set-output name=backend::$backend"
+          echo "::set-output name=payment::$payment"
+          echo "::set-output name=license::$license"
+          echo "::set-output name=gateway::$gateway"
   create-release:
     name: Create release
     needs: [initial_setting]
@@ -60,8 +87,20 @@ jobs:
         id: determine-repos
         run: |
           if [ ${{ matrix.env }} == "gateway" ]; then
-            if grep -q "gateway" <<<"${{ inputs.release_env }}"; then
+            if [ ${{ needs.initial_setting.outputs.gateway }}  == "deploy" ]; then
               repo=saleshub-gateway
+            fi
+          elif [ ${{ matrix.env }} == "backend" ]; then
+            if [ ${{ needs.initial_setting.outputs.backend }}  == "deploy" ]; then
+              repo=saleshub-backend
+            fi
+          elif [ ${{ matrix.env }} == "license" ]; then
+            if [ ${{ needs.initial_setting.outputs.license }}  == "deploy" ]; then
+              repo=license-server
+            fi
+          elif [ ${{ matrix.env }} == "payment" ]; then
+            if [ ${{ needs.initial_setting.outputs.payment }}  == "deploy" ]; then
+              repo=saleshub-payment
             fi
           fi
           echo "repo=$repo" >> $GITHUB_OUTPUT
@@ -97,3 +136,79 @@ jobs:
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
+  
+  sp012-gateway:
+    if: ${{ needs.initial_setting.outputs.gateway == 'deploy' }}
+    needs: [initial_setting, create-release]
+    name: Gateway Module Deploy
+    uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
+    with:
+      working_dir: ./
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ needs.initial_setting.outputs.deploy_env }}
+      release_repo: saleshub-gateway
+      qa_s3_bucket: sp012-build-q-ue1
+      prod_s3_bucket: sp012-build-p-ue1
+      dev_s3_bucket: sp012-build-d-an2-001
+      qa_aws_account: '060636281042'
+      prod_aws_account: '497796310523'
+      dev_aws_account: '540528117317'
+      s3_prefix: gateway
+    secrets: inherit
+
+  sp012-backend:
+    if: ${{ needs.initial_setting.outputs.backend == 'deploy' }}
+    needs: [initial_setting, create-release]
+    name: Backend Module Deploy
+    uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
+    with:
+      working_dir: ./
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ needs.initial_setting.outputs.deploy_env }}
+      release_repo: saleshub-backend
+      qa_s3_bucket: sp012-build-q-ue1
+      prod_s3_bucket: sp012-build-p-ue1
+      dev_s3_bucket: sp012-build-d-an2-001
+      qa_aws_account: '060636281042'
+      prod_aws_account: '497796310523'
+      dev_aws_account: '540528117317'
+      s3_prefix: backend
+    secrets: inherit
+
+  sp012-license:
+    if: ${{ needs.initial_setting.outputs.license == 'deploy' }}
+    needs: [initial_setting, create-release]
+    name: License Module Deploy
+    uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
+    with:
+      working_dir: ./
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ needs.initial_setting.outputs.deploy_env }}
+      release_repo: license-server
+      qa_s3_bucket: sp012-build-q-ue1
+      prod_s3_bucket: sp012-build-p-ue1
+      dev_s3_bucket: sp012-build-d-an2-001
+      qa_aws_account: '060636281042'
+      prod_aws_account: '497796310523'
+      dev_aws_account: '540528117317'
+      s3_prefix: license
+    secrets: inherit
+
+  sp012-payment:
+    if: ${{ needs.initial_setting.outputs.payment == 'deploy' }}
+    needs: [initial_setting, create-release]
+    name: Payment Module Deploy
+    uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
+    with:
+      working_dir: ./
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ needs.initial_setting.outputs.deploy_env }}
+      release_repo: saleshub-payment
+      qa_s3_bucket: sp012-build-q-ue1
+      prod_s3_bucket: sp012-build-p-ue1
+      dev_s3_bucket: sp012-build-d-an2-001
+      qa_aws_account: '060636281042'
+      prod_aws_account: '497796310523'
+      dev_aws_account: '540528117317'
+      s3_prefix: payment
+    secrets: inherit
