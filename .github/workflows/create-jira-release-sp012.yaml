@@ -43,7 +43,7 @@ jobs:
             fi
         
           echo "branch=$branch" >> $GITHUB_OUTPUT
-          echo "deploy=$deploy_env" >> $GITHUB_OUTPUT
+          echo "deploy_env=$deploy_env" >> $GITHUB_OUTPUT
           
   create-release:
     name: Create release
