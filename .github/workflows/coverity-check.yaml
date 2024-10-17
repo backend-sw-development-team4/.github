@@ -57,6 +57,10 @@ jobs:
             # Replace "mopl-mopl-" with "mopl-" in STREAM
             STREAM=$(echo "$STREAM" | sed 's/mopl-mopl-/mopl-/')
           fi
+          if [ "$STREAM" = "mopl-admin" ]; then
+            # Replace "mopl-admin" with "mopl-mopl-admin"
+            STREAM="mopl-mopl-admin"
+          fi
           echo $STREAM
 
           CSA_DIR=/home/jenkins/cov-analysis
