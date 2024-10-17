@@ -102,6 +102,10 @@ jobs:
             if [ ${{ needs.initial_setting.outputs.payment }}  == "deploy" ]; then
               repo=saleshub-payment
             fi
+          elif [ ${{ matrix.env }} == "frontend" ]; then
+            if [ ${{ needs.initial_setting.outputs.frontend }}  == "deploy" ]; then
+              repo=saleshub-frontend
+            fi
           fi
           echo "repo=$repo" >> $GITHUB_OUTPUT
 
@@ -194,8 +198,8 @@ jobs:
       s3_prefix: license
     secrets: inherit
 
-  sp012-payment:
-    if: ${{ needs.initial_setting.outputs.payment == 'deploy' }}
+  sp012-frontend:
+    if: ${{ needs.initial_setting.outputs.frontend == 'deploy' }}
     needs: [initial_setting, create-release]
     name: Payment Module Deploy
     uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
@@ -203,12 +207,17 @@ jobs:
       working_dir: ./
       release_version: ${{ inputs.release_version }}
       release_env: ${{ needs.initial_setting.outputs.deploy_env }}
-      release_repo: saleshub-payment
+      release_repo: saleshub-frontend
       qa_s3_bucket: sp012-build-q-ue1
+      qa_front_s3_bucket: sp012-licenseview-q-ue1
       prod_s3_bucket: sp012-build-p-ue1
+      prod_front_s3_bucket: sp012-licenseview-p-ue1
+      dev_front_s3_bucket: sp012-licenseview-d-an2-001
       dev_s3_bucket: sp012-build-d-an2-001
       qa_aws_account: '060636281042'
       prod_aws_account: '497796310523'
       dev_aws_account: '540528117317'
-      s3_prefix: payment
+      s3_prefix: frontend
+      qa_cloudfront_distribution_id: E3H96P9LID60CL
+      prod_cloudfront_distribution_id: EJGVL5C56392T
     secrets: inherit
