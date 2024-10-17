@@ -73,8 +73,13 @@ on:
         required: false
         default: ""
         type: string 
-      cloudfront_distribution_id:
-        description: 'Cloudfront Distribution ID'
+      qa_cloudfront_distribution_id:
+        description: 'QA Cloudfront Distribution ID'
+        required: false
+        default: ""
+        type: string
+      prod_cloudfront_distribution_id:
+        description: 'PROD Cloudfront Distribution ID'
         required: false
         default: ""
         type: string
@@ -177,8 +182,11 @@ jobs:
       - name: Creat CloudFront Invalidations
         working-directory: ./
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront_distribution_id }} --paths "/*" 
-          
+          if [ ${{ inputs.release_env }}  == "QA" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*" 
+          elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cloudfront_distribution_id }} --paths "/*" 
+          fi
       
       - name: Push to S3 CICD Bucket
         working-directory: ./
