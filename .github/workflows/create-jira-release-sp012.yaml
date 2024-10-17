@@ -219,5 +219,5 @@ jobs:
       dev_aws_account: '540528117317'
       s3_prefix: frontend
       qa_cloudfront_distribution_id: E3H96P9LID60CL
-      prod_cloudfront_distribution_idEJGVL5C56392T
+      prod_cloudfront_distribution_id: EJGVL5C56392T
     secrets: inherit
