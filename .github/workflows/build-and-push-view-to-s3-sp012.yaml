@@ -171,13 +171,12 @@ jobs:
           aws-region: us-east-1
       
       - name: Push to S3 Front Bucket
-        working-directory: ./
+        working-directory: ./deploy/build-atrifact/
         run: |
-         cd dist
          if [ ${{ inputs.release_env }}  == "QA" ]; then
-            aws s3 sync . s3://${{ inputs.qa_front_s3_bucket }} --delete
+            aws s3 sync ./ s3://${{ inputs.qa_front_s3_bucket }} --delete
          elif [ ${{ inputs.release_env }}  == "PROD" ]; then
-            aws s3 sync . s3://${{ inputs.prod_front_s3_bucket }} --delete
+            aws s3 sync ./ s3://${{ inputs.prod_front_s3_bucket }} --delete
          fi
 
 
