@@ -151,6 +151,8 @@ jobs:
           elif [ ${{ inputs.release_env }}  == "PROD" ]; then
             yarn build:prod
           fi
+
+          ls -al
       
       - name: Configure QA AWS credentials
         if: ${{ inputs.release_env == 'QA' }}
