@@ -29,22 +29,22 @@ on:
         default: ""
         type: string
       prod_s3_bucket:
-        description: 'Prod env S3 Bucket Name'
+        description: 'prod env S3 Bucket Name'
         required: true
         default: ""
         type: string
       prod_aws_account:
-        description: 'Prod AWS Account'
+        description: 'prod AWS Account'
         required: true
         default: ""
         type: string
       qa_s3_bucket:
-        description: 'QA env S3 Bucket Name'
+        description: 'qa env S3 Bucket Name'
         required: false
         default: ""
         type: string
       qa_aws_account:
-        description: 'QA AWS Account'
+        description: 'qa AWS Account'
         required: false
         default: ""
         type: string
@@ -70,8 +70,8 @@ permissions:
 
 jobs:
   qa-build-deploy:
-    name: QA Build Deploy
-    if: ${{ inputs.release_env == 'QA' }}
+    name: qa Build Deploy
+    if: ${{ inputs.release_env == 'qa' }}
     runs-on: ubuntu-latest
     environment: main
     steps:
@@ -144,8 +144,8 @@ jobs:
           aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
 
   prod-deploy:
-    name: Prod Deploy
-    if: ${{ inputs.release_env == 'PROD' }}
+    name: prod Deploy
+    if: ${{ inputs.release_env == 'prod' }}
     runs-on: ubuntu-latest
     environment: main
     steps:
@@ -156,7 +156,7 @@ jobs:
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
 
-      - name: Get QA code from S3 Bucket
+      - name: Get qa code from S3 Bucket
         working-directory: ${{ inputs.working_dir }}
         run: |
           aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip . --only-show-errors 
