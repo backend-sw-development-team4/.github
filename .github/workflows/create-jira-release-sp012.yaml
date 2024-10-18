@@ -231,10 +231,10 @@ jobs:
       release_env: ${{ needs.initial_setting.outputs.deploy_env }}
       release_repo: saleshub-frontend
       qa_s3_bucket: sp012-build-q-ue1
-      qa_front_s3_bucket: sp012-licenseview-q-ue1
+      qa_front_s3_bucket: sp012-frontend-q-ue1
       prod_s3_bucket: sp012-build-p-ue1
-      prod_front_s3_bucket: sp012-licenseview-p-ue1
-      dev_front_s3_bucket: sp012-licenseview-d-an2-001
+      prod_front_s3_bucket: sp012-frontend-p-ue1
+      dev_front_s3_bucket: sp012-frontend-d-an2-001
       dev_s3_bucket: sp012-build-d-an2-001
       qa_aws_account: '060636281042'
       prod_aws_account: '497796310523'

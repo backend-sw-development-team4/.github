@@ -29,32 +29,32 @@ on:
         default: ""
         type: string
       prod_s3_bucket:
-        description: 'Prod env S3 Bucket Name'
+        description: 'prod env S3 Bucket Name'
         required: true
         default: ""
         type: string
       prod_front_s3_bucket:
-        description: 'Prod env Front S3 Bucket Name'
+        description: 'prod env Front S3 Bucket Name'
         required: true
         default: ""
         type: string
       prod_aws_account:
-        description: 'Prod AWS Account'
+        description: 'prod AWS Account'
         required: true
         default: ""
         type: string
       qa_s3_bucket:
-        description: 'QA env S3 Bucket Name'
+        description: 'qa env S3 Bucket Name'
         required: false
         default: ""
         type: string
       qa_front_s3_bucket:
-        description: 'QA env Front S3 Bucket Name'
+        description: 'qa env Front S3 Bucket Name'
         required: false
         default: ""
         type: string
       qa_aws_account:
-        description: 'QA AWS Account'
+        description: 'qa AWS Account'
         required: false
         default: ""
         type: string
@@ -74,12 +74,12 @@ on:
         default: ""
         type: string 
       qa_cloudfront_distribution_id:
-        description: 'QA Cloudfront Distribution ID'
+        description: 'qa Cloudfront Distribution ID'
         required: false
         default: ""
         type: string
       prod_cloudfront_distribution_id:
-        description: 'PROD Cloudfront Distribution ID'
+        description: 'prod Cloudfront Distribution ID'
         required: false
         default: ""
         type: string
@@ -123,9 +123,9 @@ jobs:
         if: ${{ inputs.s3_prefix != 'frontend' }}
         working-directory: ./
         run: |
-          if [ ${{ inputs.release_env }}  == "QA" ]; then
+          if [ ${{ inputs.release_env }}  == "qa" ]; then
             pnpm run build:qa
-          elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+          elif [ ${{ inputs.release_env }}  == "prod" ]; then
             pnpm run build:prod
           fi
 
@@ -146,24 +146,24 @@ jobs:
         if: ${{ inputs.s3_prefix == 'frontend' }}
         working-directory: ./
         run: |
-          if [ ${{ inputs.release_env }}  == "QA" ]; then
+          if [ ${{ inputs.release_env }}  == "qa" ]; then
             yarn build:qa
-          elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+          elif [ ${{ inputs.release_env }}  == "prod" ]; then
             yarn build:prod
           fi
 
           ls -al
       
-      - name: Configure QA AWS credentials
-        if: ${{ inputs.release_env == 'QA' }}
+      - name: Configure qa AWS credentials
+        if: ${{ inputs.release_env == 'qa' }}
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::060636281042:role/role-sp012-qa-github-ci
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
       
-      - name: Configure PROD AWS credentials
-        if: ${{ inputs.release_env == 'PROD' }}
+      - name: Configure prod AWS credentials
+        if: ${{ inputs.release_env == 'prod' }}
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::497796310523:role/role-sp012-prod-github-ci
@@ -171,11 +171,12 @@ jobs:
           aws-region: us-east-1
       
       - name: Push to S3 Front Bucket
-        working-directory: ./deploy/build-atrifact/
+        working-directory: ./
         run: |
-         if [ ${{ inputs.release_env }}  == "QA" ]; then
+         cd dist
+         if [ ${{ inputs.release_env }}  == "qa" ]; then
             aws s3 sync ./ s3://${{ inputs.qa_front_s3_bucket }} --delete
-         elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+         elif [ ${{ inputs.release_env }}  == "prod" ]; then
             aws s3 sync ./ s3://${{ inputs.prod_front_s3_bucket }} --delete
          fi
 
@@ -183,9 +184,9 @@ jobs:
       - name: Creat CloudFront Invalidations
         working-directory: ./
         run: |
-          if [ ${{ inputs.release_env }}  == "QA" ]; then
+          if [ ${{ inputs.release_env }}  == "qa" ]; then
             aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*" 
-          elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+          elif [ ${{ inputs.release_env }}  == "prod" ]; then
             aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cloudfront_distribution_id }} --paths "/*" 
           fi
       
@@ -194,9 +195,9 @@ jobs:
         run: |
          cd dist
          zip -qry frontend.zip .
-         if [ ${{ inputs.release_env }}  == "QA" ]; then
+         if [ ${{ inputs.release_env }}  == "qa" ]; then
             aws s3 cp frontend.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/frontend.zip --region us-east-1
-         elif [ ${{ inputs.release_env }}  == "PROD" ]; then
+         elif [ ${{ inputs.release_env }}  == "prod" ]; then
             aws s3 cp frontend.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/frontend.zip --region us-east-1
          fi
       
