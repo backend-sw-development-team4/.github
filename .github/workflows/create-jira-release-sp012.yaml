@@ -62,6 +62,9 @@ jobs:
 
           elif grep -q "gateway" <<<"${{ inputs.release_env }}"; then
             gateway=deploy
+
+          elif grep -q "frontend" <<<"${{ inputs.release_env }}"; then
+            frontend=deploy
           fi
 
         
