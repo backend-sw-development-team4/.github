@@ -131,6 +131,53 @@ jobs:
           tags: |
             "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
 
+  app-build-and-push-ecr:
+    name: Container image build and push to ecr for dev
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.environment_name }}
+    needs: create-tag
+    if: ${{ inputs.environment_name  == 'app' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions
+          aws-region: ap-northeast-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set develop env file
+        run: |
+          cp ./env/${{ vars.ENV }}/.env ./
+
+      - name: Build, tag, and push image to Amazon ECR for DEV
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ inputs.dockerfile_name }}
+          push: true
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha, mode=max
+          build-args: |
+            NPM_TOKEN=${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          tags: |
+            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
+
   qa-build-and-push-ecr:
     name: Container image build and push to ecr for qa and prod
     runs-on: ubuntu-latest
