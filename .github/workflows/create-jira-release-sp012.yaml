@@ -42,7 +42,7 @@ jobs:
             if grep -q "PROD" <<<"${{ inputs.release_env }}"; then
               deploy_env=prod
               branch=release
-            if grep -q "QA" <<<"${{ inputs.release_env }}"; then
+            elif grep -q "QA" <<<"${{ inputs.release_env }}"; then
               deploy_env=qa
               branch=release
             else
