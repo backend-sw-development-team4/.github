@@ -132,7 +132,7 @@ jobs:
             "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
 
   app-build-and-push-ecr:
-    name: Container image build and push to ecr for dev
+    name: Container image build and push to ecr for mobile
     runs-on: ubuntu-latest
     environment: 
       name: ${{ inputs.environment_name }}
