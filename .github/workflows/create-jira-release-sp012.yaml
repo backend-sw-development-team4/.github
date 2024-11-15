@@ -51,22 +51,22 @@ jobs:
             fi
           fi
 
-          if grep -q "frotend" <<<"${{ inputs.release_env }}"; then
+          if grep -q "frontend" <<<"${{ inputs.release_env }}"; then
             frontend=deploy
-
-          elif grep -q "backend" <<<"${{ inputs.release_env }}"; then
+          fi
+          if grep -q "backend" <<<"${{ inputs.release_env }}"; then
             backend=deploy
-          
-          elif grep -q "payment" <<<"${{ inputs.release_env }}"; then 
+          fi
+          if grep -q "payment" <<<"${{ inputs.release_env }}"; then 
             payment=deploy
-
-          elif grep -q "license" <<<"${{ inputs.release_env }}"; then
+          fi
+          if grep -q "license" <<<"${{ inputs.release_env }}"; then
             license=deploy
-
-          elif grep -q "gateway" <<<"${{ inputs.release_env }}"; then
+          fi
+          if grep -q "gateway" <<<"${{ inputs.release_env }}"; then
             gateway=deploy
-
-          elif grep -q "frontend" <<<"${{ inputs.release_env }}"; then
+          fi
+          if grep -q "frontend" <<<"${{ inputs.release_env }}"; then
             frontend=deploy
           fi
 
