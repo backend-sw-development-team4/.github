@@ -106,6 +106,22 @@ jobs:
           repository: backend-sw-development-team4/${{ inputs.release_repo }}
           ref: refs/heads/release
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      
+      - name: Set New Version
+        if: ${{ inputs.s3_prefix == 'frontend' }}
+        run: |
+          NEW_VERSION="${{ release_version }}"
+          echo "Updating package.json to version $NEW_VERSION"
+          jq ".version = \"${NEW_VERSION}\"" package.json > package.tmp.json
+          mv package.tmp.json package.json
+          cat package.json
+
+
+      - name: Setup pnpm
+        if: ${{ inputs.s3_prefix != 'frontend' }}
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: Setup pnpm
         if: ${{ inputs.s3_prefix != 'frontend' }}
