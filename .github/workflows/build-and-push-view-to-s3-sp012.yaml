@@ -117,11 +117,7 @@ jobs:
           cat package.json
 
 
-      - name: Setup pnpm
-        if: ${{ inputs.s3_prefix != 'frontend' }}
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+  
 
       - name: Setup pnpm
         if: ${{ inputs.s3_prefix != 'frontend' }}
