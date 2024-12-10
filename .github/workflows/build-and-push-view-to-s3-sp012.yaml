@@ -110,7 +110,7 @@ jobs:
       - name: Set New Version
         if: ${{ inputs.s3_prefix == 'frontend' }}
         run: |
-          NEW_VERSION="${{ release_version }}"
+          NEW_VERSION="${{ inputs.release_version }}"
           echo "Updating package.json to version $NEW_VERSION"
           jq ".version = \"${NEW_VERSION}\"" package.json > package.tmp.json
           mv package.tmp.json package.json
