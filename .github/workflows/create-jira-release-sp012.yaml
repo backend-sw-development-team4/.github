@@ -84,6 +84,10 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ needs.initial_setting.outputs.deploy_env == 'prod' }}
     environment: prod
+    steps:
+      - name: Check Prod
+        run: |
+          echo "Check Prod"
 
 
   create-release-qa:
