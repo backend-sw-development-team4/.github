@@ -47,7 +47,7 @@ jobs:
               branch=release
             else
               deploy_env=hotfix
-              branch=release
+              branch=hotfix
             fi
           fi
 

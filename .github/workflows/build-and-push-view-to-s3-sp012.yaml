@@ -100,11 +100,20 @@ jobs:
     environment: main
     steps:
       - name: Checkout current repository
+        if: ${{ inputs.release_env != 'hotfix' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           repository: backend-sw-development-team4/${{ inputs.release_repo }}
           ref: refs/heads/release
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      - name: Checkout current repository hotfix
+        if: ${{ inputs.release_env == 'hotfix' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: backend-sw-development-team4/${{ inputs.release_repo }}
+          ref: refs/heads/hotfix
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       
       - name: Set New Version
