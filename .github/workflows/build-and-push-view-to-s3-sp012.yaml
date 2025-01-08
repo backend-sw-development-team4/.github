@@ -100,11 +100,20 @@ jobs:
     environment: main
     steps:
       - name: Checkout current repository
+        if: ${{ inputs.release_env != 'hotfix' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           repository: backend-sw-development-team4/${{ inputs.release_repo }}
           ref: refs/heads/release
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      - name: Checkout current repository hotfix
+        if: ${{ inputs.release_env == 'hotfix' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: backend-sw-development-team4/${{ inputs.release_repo }}
+          ref: refs/heads/hotfix/1.5.1
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       
       - name: Set New Version
@@ -162,6 +171,8 @@ jobs:
             yarn build:qa
           elif [ ${{ inputs.release_env }}  == "prod" ]; then
             yarn build:prod
+          elif [ ${{ inputs.release_env }}  == "hotfix" ]; then
+            yarn build:prod
           fi
 
           ls -al
@@ -175,7 +186,7 @@ jobs:
           aws-region: us-east-1
       
       - name: Configure prod AWS credentials
-        if: ${{ inputs.release_env == 'prod' }}
+        if: ${{ inputs.release_env == 'prod' || inputs.release_env == 'hotfix'  }}
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::497796310523:role/role-sp012-prod-github-ci
@@ -190,6 +201,8 @@ jobs:
             aws s3 sync ./ s3://${{ inputs.qa_front_s3_bucket }} --delete
          elif [ ${{ inputs.release_env }}  == "prod" ]; then
             aws s3 sync ./ s3://${{ inputs.prod_front_s3_bucket }} --delete
+         elif [ ${{ inputs.release_env }}  == "hotfix" ]; then
+            aws s3 sync ./ s3://${{ inputs.prod_front_s3_bucket }} --delete   
          fi
 
 
@@ -199,6 +212,8 @@ jobs:
           if [ ${{ inputs.release_env }}  == "qa" ]; then
             aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*" 
           elif [ ${{ inputs.release_env }}  == "prod" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cloudfront_distribution_id }} --paths "/*" 
+          elif [ ${{ inputs.release_env }}  == "hotfix" ]; then
             aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cloudfront_distribution_id }} --paths "/*" 
           fi
       
@@ -211,6 +226,8 @@ jobs:
             aws s3 cp frontend.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/frontend.zip --region us-east-1
          elif [ ${{ inputs.release_env }}  == "prod" ]; then
             aws s3 cp frontend.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/frontend.zip --region us-east-1
+         elif [ ${{ inputs.release_env }}  == "hotfix" ]; then
+            aws s3 cp frontend.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/frontend.zip --region us-east-1   
          fi
       
          
