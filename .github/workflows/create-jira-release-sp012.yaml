@@ -460,7 +460,7 @@ jobs:
       prod_cloudfront_distribution_id: EJGVL5C56392T
     secrets: inherit
 
-  sp012-license-prod:
+  sp012-license-hotfix:
     if: ${{ needs.initial_setting.outputs.license == 'deploy' && needs.initial_setting.outputs.deploy_env == 'prod' }}
     needs: [initial_setting, create-release-prod]
     name: License Module Deploy(hotfix)
