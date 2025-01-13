@@ -432,7 +432,10 @@ jobs:
       qa_cloudfront_distribution_id: E3H96P9LID60CL
       prod_cloudfront_distribution_id: EJGVL5C56392T
     secrets: inherit
-  
+
+################################################################
+
+
   sp012-frontend-hotfix:
     if: ${{ needs.initial_setting.outputs.frontend == 'deploy' &&  needs.initial_setting.outputs.deploy_env == 'hotfix' }}
     needs: [initial_setting, create-release-prod]
@@ -455,4 +458,23 @@ jobs:
       s3_prefix: frontend
       qa_cloudfront_distribution_id: E3H96P9LID60CL
       prod_cloudfront_distribution_id: EJGVL5C56392T
+    secrets: inherit
+
+  sp012-license-prod:
+    if: ${{ needs.initial_setting.outputs.license == 'deploy' && needs.initial_setting.outputs.deploy_env == 'prod' }}
+    needs: [initial_setting, create-release-prod]
+    name: License Module Deploy(hotfix)
+    uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
+    with:
+      working_dir: ./
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ needs.initial_setting.outputs.deploy_env }}
+      release_repo: license-server
+      qa_s3_bucket: sp012-build-q-ue1
+      prod_s3_bucket: sp012-build-p-ue1
+      dev_s3_bucket: sp012-build-d-an2-001
+      qa_aws_account: '060636281042'
+      prod_aws_account: '497796310523'
+      dev_aws_account: '540528117317'
+      s3_prefix: license
     secrets: inherit
