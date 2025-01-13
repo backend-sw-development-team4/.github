@@ -461,7 +461,7 @@ jobs:
     secrets: inherit
 
   sp012-license-hotfix:
-    if: ${{ needs.initial_setting.outputs.license == 'deploy' && needs.initial_setting.outputs.deploy_env == 'prod' }}
+    if: ${{ needs.initial_setting.outputs.license == 'deploy' && needs.initial_setting.outputs.deploy_env == 'hotfix' }}
     needs: [initial_setting, create-release-prod]
     name: License Module Deploy(hotfix)
     uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
