@@ -148,7 +148,7 @@ jobs:
           
           # Upload qa version file to S3 bucket.
           aws s3 cp ${{ inputs.qa_version_json_file_path }} s3://mopl015-common-p-an2/${{ inputs.qa_version_json_file_path }} --region ap-northeast-2
-
+          aws s3 cp qa_version.yaml s3://mopl015-common-p-an2/qa_version.yaml --region ap-northeast-2
           # Setting CloudFront
           aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*"
 
@@ -233,12 +233,22 @@ jobs:
           egrep -r "newTag|newName" * |grep prod
 
       #After copying, update the production environment with server version information from prod_version.yaml  
-      - name: Copy the qa_version.yaml file to prod_version.yaml file.
+      - name: Copy the qa_version.yaml file to prod_version.yaml file
         run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.mopl_qa_aws_accountid }}:role/AWSTerraformAssumeRole --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
+          # get qa version file to local.
           pwd
           ls -la
-          cp qa_version.yaml prod_version.yaml
-          cp qa_version.json prod_version.json
+          aws s3 cp s3://mopl015-common-p-an2/qa_version.json qa_latest_version.json --region ap-northeast-2
+          aws s3 cp s3://mopl015-common-p-an2/qa_version.yaml qa_latest_version.yaml --region ap-northeast-2
+          cp qa_latest_version.yaml prod_version.yaml
+          cp qa_latest_version.json prod_version.json
+          rm qa_latest_version.yaml qa_latest_version.json
 
       - name: Update version.json information
         if: ${{ inputs.application_name }} != ""
