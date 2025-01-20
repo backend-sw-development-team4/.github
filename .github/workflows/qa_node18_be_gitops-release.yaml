@@ -96,6 +96,20 @@ jobs:
           git config user.email "<>" && \
           git add --all
           git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
-          git pull origin main --rebase && \
-          git push origin main
+          # Push logic with retries
+          for i in {1..5}; do
+            git pull origin main --rebase
+            if git push origin main; then
+              echo "Push successful"
+              break
+            else
+              echo "Push failed, retrying ($i/5)..."
+              sleep 5
+            fi
+          done
 
+          # If the push still fails after retries
+          if [ $? -ne 0 ]; then
+            echo "Push failed after multiple attempts"
+            exit 1
+          fi
