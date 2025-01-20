@@ -94,11 +94,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: get node18 packages file 
-        run: |
-          cp ./node18/package.json ./package.json
-          cp ./node18/yarn.lock ./yarn.lock
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
