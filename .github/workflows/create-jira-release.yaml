@@ -315,9 +315,22 @@ jobs:
           cat ./device-service/env/prod/kustomization.yaml
           cat ./mopl-admin/env/prod/kustomization.yaml
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions
+          aws-region: ap-northeast-2
+
       # Assume to Each Account as AWSControlTowerExecution
       - name: Push build artifact to S3 Bucket and invalidation CloudFront
         run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.mopl_prod_aws_accountid }}:role/AWSTerraformAssumeRole --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
           # Upload qa version file to S3 bucket.
           aws s3 cp ${{ inputs.prod_version_json_file_path }} s3://mopl015-common-p-an2/${{ inputs.prod_version_json_file_path }} --region ap-northeast-2
 
