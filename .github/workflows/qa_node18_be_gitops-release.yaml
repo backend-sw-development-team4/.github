@@ -86,7 +86,7 @@ jobs:
         with:
           cmd: |
             yq -i '
-            .spec.template.spec.containers[0].image |= sub(":[^:]+$", ":'"${{ inputs.tag_name }}"'")
+            .spec.template.spec.containers[0].image |= sub(":[^:]+$", ":'"${{ inputs.image_tag }}"'")
             ' ./gitops/${{ inputs.application_name }}/env/${{ vars.ENV }}/set_DD_env_n18.yaml
 
       - name: Commit changes
