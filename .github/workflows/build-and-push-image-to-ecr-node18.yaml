@@ -1,4 +1,4 @@
-name: "Node18" Build and Push container image to aws ecr using dockerfile
+name: Node18 Build and Push container image to aws ecr using dockerfile
 
 on:
   workflow_call:
