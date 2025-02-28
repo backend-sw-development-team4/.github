@@ -478,22 +478,3 @@ jobs:
       dev_aws_account: '540528117317'
       s3_prefix: license
     secrets: inherit
-
-  sp012-backend-hotfix:
-    if: ${{ needs.initial_setting.outputs.backend == 'deploy' && needs.initial_setting.outputs.deploy_env == 'hotfix' }}
-    needs: [initial_setting, create-release-prod]
-    name: Backend Module Deploy(hotfix)
-    uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
-    with:
-      working_dir: ./
-      release_version: ${{ inputs.release_version }}
-      release_env: ${{ needs.initial_setting.outputs.deploy_env }}
-      release_repo: saleshub-backend
-      qa_s3_bucket: sp012-build-q-ue1
-      prod_s3_bucket: sp012-build-p-ue1
-      dev_s3_bucket: sp012-build-d-an2-001
-      qa_aws_account: '060636281042'
-      prod_aws_account: '497796310523'
-      dev_aws_account: '540528117317'
-      s3_prefix: backend
-    secrets: inherit
