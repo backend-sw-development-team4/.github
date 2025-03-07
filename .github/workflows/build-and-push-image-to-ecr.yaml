@@ -51,9 +51,9 @@ on:
       MOPL_CODEFREEZE:
         required: false
       MOPL_AWS_ACCESS_KEY_ID:
-        required: true
+        required: false
       MOPL_AWS_SECRET_ACCESS_KEY:
-        required: true
+        required: false
       DOCKER_BUILD_ARGS:
         required: false
 
