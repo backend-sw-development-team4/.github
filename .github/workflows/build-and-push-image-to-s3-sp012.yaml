@@ -240,7 +240,7 @@ jobs:
         run: |
           # Unzip qa deploy.zip
           unzip -oq deploy.zip
-          rm env deploy.zip
+          rm deploy.zip
 
           # Check if env file exists in the specific release version path
           if ! aws s3 ls s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/${{ inputs.release_version }}/env > /dev/null 2>&1; then
