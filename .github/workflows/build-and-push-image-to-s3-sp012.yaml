@@ -197,6 +197,7 @@ jobs:
     environment: main
     steps:
       - name: Checkout current repository
+        if: ${{ inputs.s3_prefix != 'backend' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
