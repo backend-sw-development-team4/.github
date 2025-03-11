@@ -481,7 +481,7 @@ jobs:
 
 
   sp012-backend-hotfix:
-    if: ${{ needs.initial_setting.outputs.license == 'deploy' && needs.initial_setting.outputs.deploy_env == 'hotfix' }}
+    if: ${{ needs.initial_setting.outputs.backend == 'deploy' && needs.initial_setting.outputs.deploy_env == 'hotfix' }}
     needs: [initial_setting, create-release-prod]
     name: Backend Module Deploy(hotfix)
     uses: ./.github/workflows/build-and-push-image-to-s3-sp012.yaml
