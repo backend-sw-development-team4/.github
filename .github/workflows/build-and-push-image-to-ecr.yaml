@@ -103,8 +103,13 @@ jobs:
 
       - name: Get gRPC Proto
         if: inputs.get_grpc_proto == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
         run: |
           #!/bin/bash
+
+          # 配置 Git 认证
+          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           
           # 프로토 서브모듈 추가
           git submodule add --force -b develop https://github.com/backend-sw-development-team4/mopl-common-proto.git src/submodule
