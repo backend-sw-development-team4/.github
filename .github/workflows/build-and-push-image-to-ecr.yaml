@@ -45,6 +45,11 @@ on:
         description: "Environment name for tagging"
         type: string
         default: "dev"
+      get_grpc_proto:
+        required: false
+        description: "Whether to get the proto file"
+        type: string
+        default: "false"
     secrets:
       GH_MANAGEPACKAGE_TOKEN:
         required: true
@@ -95,6 +100,23 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+
+      - name: Get gRPC Proto
+        if: inputs.get_grpc_proto == 'true'
+        run: |
+          #!/bin/bash
+          
+          # 프로토 서브모듈 추가
+          git submodule add --force -b develop https://github.com/backend-sw-development-team4/mopl-common-proto.git src/submodule
+
+          # sparse checkout 설정
+          git -C src/submodule config core.sparseCheckout true
+          echo "proto/*" >> .git/modules/src/submodule/info/sparse-checkout
+
+          # 서브모듈 업데이트 (초기 설정후 아래 명령어로 update 실행)
+          git submodule update --remote --force --checkout src/submodule
+
+          echo "Proto 설정이 완료되었습니다!"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
