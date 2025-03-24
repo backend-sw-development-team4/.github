@@ -1,0 +1,74 @@
+name: GitOps Release
+
+on:
+  workflow_call:
+    inputs:
+      repository_name:
+        required: true
+        description: "Name of repository"
+        type: string
+      image_tag:
+        required: true
+        description: "Tag of image"
+        type: string
+      application_name:
+        required: false
+        description: "Name of actual application"
+        type: string
+        default: ""
+
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used."
+
+permissions: write-all
+
+jobs:
+  gitops-release:
+    runs-on: ubuntu-latest
+    name: GitOps Release
+    steps:
+      - name: Checkout state repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository_name }}
+          path: ./gitops
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Update version version.yaml information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}"' ./gitops/qa_version.yaml      
+
+      - name: Update lambda server version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["LambdaVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/qa_version.json
+
+      - name: Commit changes
+        working-directory: ./gitops
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "chore: update ${{ inputs.application_name }} image tag as ${{ inputs.image_tag }}" && \
+          # Push logic with retries
+          for i in {1..5}; do
+            git pull origin main --rebase
+            if git push origin main; then
+              echo "Push successful"
+              break
+            else
+              echo "Push failed, retrying ($i/5)..."
+              sleep 5
+            fi
+          done
+
+          # If the push still fails after retries
+          if [ $? -ne 0 ]; then
+            echo "Push failed after multiple attempts"
+            exit 1
+          fi

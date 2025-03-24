@@ -1,0 +1,58 @@
+name: Update Lambda Container Image
+
+on:
+  workflow_call:  # Triggered when called by another GitHub Actions workflow
+    inputs:
+      image_name:
+        required: true
+        description: "Name of the container registry and image (e.g., <registry>/<image-name>)"
+        type: string
+      image_tag:
+        required: true
+        description: "Tag of the container image to be deployed (e.g., latest, v1.0.0)"
+        type: string
+      aws_account_id:
+        required: true
+        description: "AWS account ID where the Lambda function is deployed"
+        type: string
+      lambda_function_name:
+        required: true
+        description: "Name of the AWS Lambda function to update"
+        type: string
+
+permissions: write-all  # Grant full permissions to this workflow
+
+jobs:
+  lambda-release:
+    runs-on: ubuntu-latest  # Specify the environment to run this job
+
+    name: Lambda Release Job
+    steps:
+      # Step 1: Configure AWS credentials for the main AWS account
+      # This step sets up credentials to assume the deployment role in the main AWS account.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions  # Set a name for the AWS role session
+          aws-region: ap-northeast-2  # Specify the AWS region (modify based on your deployment needs)
+
+      # Step 2: Assume a role in the target AWS account and update the Lambda function
+      - name: Assume role and update Lambda function image
+        run: |
+          # Assume the target AWS account role to get temporary credentials
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.aws_account_id }}:role/AWSTerraformAssumeRole --role-session-name AWS)
+
+          # Extract temporary AWS credentials (AccessKeyId, SecretAccessKey, SessionToken)
+          # These credentials will allow us to update the Lambda function in the target account
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
+          # Construct the full image URI with the provided image_name and image_tag
+          IMAGE_URI="${{ inputs.image_name }}:${{ inputs.image_tag }}"
+          
+          # Update the AWS Lambda function with the new container image URI
+          aws lambda update-function-code --function-name ${{ inputs.lambda_function_name }} --image-uri $IMAGE_URI
+          
+          echo "Lambda function ${{ inputs.lambda_function_name }} updated with image $IMAGE_URI."
