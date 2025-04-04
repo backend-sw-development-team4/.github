@@ -129,6 +129,21 @@ jobs:
           git push origin main
         continue-on-error: true
 
+      # Retrieve the version tag for async-service from a JSON file
+      - name: get QA async_image_tag
+        run: |
+          ASYNC_IMAGE_TAG=$(=jq -r '.["LambdaVersion"].["async-service"]' qa_version.json)
+          echo "async_image_tag=$IMAGE_TAG" >> $GITHUB_ENV
+
+      # Deploy the Lambda function using the async_image_tag version tag
+      - name: lambda release for async - qa
+        uses: backend-sw-development-team4/.github/.github/workflows/lambda-release.yaml@main
+        with:
+          image_tag: ${{ env.async_image_tag }}
+          image_name: 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-async-an2
+          aws_account_id: 103827304329
+          lambda_function_name: lambda-mopl015-qa-async-an2
+
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -314,6 +329,21 @@ jobs:
           egrep -r "newTag|newName" * |grep prod
           cat ./device-service/env/prod/kustomization.yaml
           cat ./mopl-admin/env/prod/kustomization.yaml
+
+      # Retrieve the version tag for async-service from a JSON file
+      - name: get PROD async_image_tag
+        run: |
+          ASYNC_IMAGE_TAG=$(=jq -r '.["LambdaVersion"].["async-service"]' prod_version.json)
+          echo "async_image_tag=$IMAGE_TAG" >> $GITHUB_ENV
+
+      # Deploy the Lambda function using the async_image_tag version tag
+      - name: lambda release for async - prod
+        uses: backend-sw-development-team4/.github/.github/workflows/lambda-release.yaml@main
+        with:
+          image_tag: ${{ env.async_image_tag }}
+          image_name: 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-async-an2
+          aws_account_id: 852637827699
+          lambda_function_name: lambda-mopl015-prod-async-an2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
