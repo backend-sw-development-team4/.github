@@ -133,7 +133,7 @@ jobs:
       - name: get QA async_image_tag
         run: |
           ASYNC_IMAGE_TAG=$(=jq -r '.["LambdaVersion"].["async-service"]' qa_version.json)
-          echo "async_image_tag=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "async_image_tag=$ASYNC_IMAGE_TAG" >> $GITHUB_ENV
 
       # Deploy the Lambda function using the async_image_tag version tag
       - name: lambda release for async - qa
@@ -334,7 +334,7 @@ jobs:
       - name: get PROD async_image_tag
         run: |
           ASYNC_IMAGE_TAG=$(=jq -r '.["LambdaVersion"].["async-service"]' prod_version.json)
-          echo "async_image_tag=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "async_image_tag=$ASYNC_IMAGE_TAG" >> $GITHUB_ENV
 
       # Deploy the Lambda function using the async_image_tag version tag
       - name: lambda release for async - prod
