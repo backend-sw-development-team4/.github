@@ -189,8 +189,8 @@ jobs:
     with:
       image_tag: ${{ needs.create-qa-jira-release.outputs.lambda_async_tag }}
       image_name: 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-async-an2
-      aws_account_id: 366639460724
-      lambda_function_name: lambda-mopl015-dev-async-an2
+      aws_account_id: 103827304329
+      lambda_function_name: lambda-mopl015-qa-async-an2
 
   devops-approval: 
     name: Waiting for Devops Approval (PROD)
