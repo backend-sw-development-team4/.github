@@ -131,6 +131,9 @@ jobs:
           git push origin main
         continue-on-error: true
 
+      - name: Install jq
+        run: sudo apt-get install jq
+
       # Retrieve the version tag for async-service from a JSON file
       - name: get QA async_image_tag
         id: async_image_tag
