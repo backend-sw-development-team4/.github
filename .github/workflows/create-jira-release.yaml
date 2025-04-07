@@ -136,7 +136,7 @@ jobs:
           echo "async_image_tag=$ASYNC_IMAGE_TAG" >> $GITHUB_ENV
 
       # Deploy the Lambda function using the async_image_tag version tag
-      - name: lambda release for async - qa
+      - name: lambda release for async for qa
         uses: backend-sw-development-team4/.github/.github/workflows/lambda-release.yaml@main
         with:
           image_tag: ${{ env.async_image_tag }}
@@ -337,7 +337,7 @@ jobs:
           echo "async_image_tag=$ASYNC_IMAGE_TAG" >> $GITHUB_ENV
 
       # Deploy the Lambda function using the async_image_tag version tag
-      - name: lambda release for async - prod
+      - name: lambda release for async for prod
         uses: backend-sw-development-team4/.github/.github/workflows/lambda-release.yaml@main
         with:
           image_tag: ${{ env.async_image_tag }}
