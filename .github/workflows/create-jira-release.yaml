@@ -131,13 +131,6 @@ jobs:
           git push origin main
         continue-on-error: true
 
-      # Retrieve the version tag for async-service from a JSON file
-      - name: get QA async_image_tag
-        id: async_image_tag
-        run: |
-          async_image_tag=$(jq -r '.["LambdaVersion"].["async-service"]' qa_version.json)
-          echo "async_image_tag=$async_image_tag" >> $GITHUB_OUTPUT
-
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -182,12 +175,19 @@ jobs:
           echo ":mag: Check the release results"
           echo ":link: Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
+      # Retrieve the version tag for async-service from a JSON file
+      - name: get QA async_image_tag
+        id: async_image_tag
+        run: |
+          async_image_tag=$(jq -r '.["LambdaVersion"].["async-service"]' qa_version.json)
+          echo "async_image_tag=$async_image_tag" >> $GITHUB_OUTPUT
+
   lambda-release-qa:
     needs: 
       - create-qa-jira-release
     uses: backend-sw-development-team4/.github/.github/workflows/lambda-release.yaml@main
     with:
-      image_tag: ${{ needs.create-qa-jira-release.outputs.lambda_async_tag }}
+      image_tag: ${{ needs.create-qa-jira-release.outputs.async_image_tag }}
       image_name: 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-async-an2
       aws_account_id: 103827304329
       lambda_function_name: lambda-mopl015-qa-async-an2
@@ -225,6 +225,8 @@ jobs:
 
   create-prod-jira-release:
     name: deploy Prod (PROD)
+    outputs:
+      async_image_tag: ${{ steps.async_image_tag.outputs.async_image_tag }}
     if: ${{ inputs.release_env == 'PROD' }}
     needs:
       - initial_setting
@@ -410,3 +412,19 @@ jobs:
           echo "is PROD"
           echo ":mag: Check the release results"
           echo ":link: Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
+
+      - name: get PROD async_image_tag
+        id: async_image_tag
+        run: |
+          async_image_tag=$(jq -r '.["LambdaVersion"].["async-service"]' prod_version.json)
+          echo "async_image_tag=$async_image_tag" >> $GITHUB_OUTPUT
+
+  lambda-release-prod:
+    needs: 
+      - create-prod-jira-release
+    uses: backend-sw-development-team4/.github/.github/workflows/lambda-release.yaml@main
+    with:
+      image_tag: ${{ needs.create-prod-jira-release.outputs.async_image_tag }}
+      image_name: 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-async-an2
+      aws_account_id: 852637827699
+      lambda_function_name: lambda-mopl015-prod-async-an2
