@@ -135,7 +135,7 @@ jobs:
       - name: get QA async_image_tag
         id: async_image_tag
         run: |
-          ASYNC_IMAGE_TAG=$=(jq -r '.["LambdaVersion"].["async-service"]' qa_version.json)
+          ASYNC_IMAGE_TAG=$(jq -r '.["LambdaVersion"].["async-service"]' qa_version.json)
           echo "async_image_tag=$ASYNC_IMAGE_TAG" >> $GITHUB_OUTPUT
 
       # Login To HVC_Admin_Automation for Deploy
