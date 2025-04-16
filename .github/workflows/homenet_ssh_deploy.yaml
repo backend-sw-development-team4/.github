@@ -1,0 +1,80 @@
+name: Homenet Continuous Deployment
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        required: true
+        type: string
+        description: "Docker image tag to deploy"
+      target_server_file:
+        required: true
+        type: string
+        description: "Path to JSON file containing target servers"
+
+    secrets:
+      AWS_ASSUME_ROLE_ARN:
+        required: false
+
+permissions: write-all
+
+jobs:
+  deploy-to-homenet:
+    runs-on: homenet
+    name: Deploy to homenet Servers
+    steps:
+      # Checkout the repository to access the JSON file
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Read the target server list from the JSON file and store it in an environment variable
+      - name: Read Target Server List from JSON
+        run: |
+          TARGET_SERVERS=$(jq -r '.target_servers | join(",")' ${{ inputs.target_server_file }})
+          echo "TARGET_SERVERS=$TARGET_SERVERS" >> $GITHUB_ENV
+
+      # Configure AWS credentials by assuming the specified IAM role
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: GitHubActionsSession
+          aws-region: ap-northeast-2
+
+      # Generate temporary AWS credentials and save them to a file
+      - name: Generate Temporary AWS Credentials
+        id: generate-aws-creds
+        run: |
+          # Save credentials in a temporary file
+          cat > ./aws_temp_credentials <<EOL
+          [default]
+          aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+          aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+          aws_session_token = ${AWS_SESSION_TOKEN}
+          EOL
+          cat ./aws_temp_credentials
+ 
+      - name: Update Docker Compose Image Tag
+        run: |
+          sed -i '' 's|image: .*|image: 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-homenet-an2:${{ inputs.image_tag }}|' docker-compose.yaml
+          cat docker-compose.yaml  # check
+
+      # Deploy the application to each target server
+      - name: Deploy to Target Machines
+        run: |
+          # Convert the comma-separated TARGET_SERVERS string into an array
+          IFS=',' read -r -a SERVER_ARRAY <<< "$TARGET_SERVERS"
+
+          # Iterate over each target server and deploy
+          for SERVER in "${SERVER_ARRAY[@]}"; do
+            echo "Deploying to $SERVER..."
+
+            # Securely transfer AWS credentials to the target server
+            scp -o StrictHostKeyChecking=no ./aws_temp_credentials mopl@$SERVER:~/.aws/credentials
+            scp ./docker-compose.yaml mopl@$SERVER:~/docker-compose.yaml
+
+            # Authenticate with AWS ECR using `bash -s`
+            ssh mopl@$SERVER "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com"
+            ssh mopl@$SERVER "docker-compose down && docker-compose up -d"
+            echo "Deployment to $SERVER completed."
+          done
