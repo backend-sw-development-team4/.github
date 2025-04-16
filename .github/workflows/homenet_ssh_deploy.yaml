@@ -78,6 +78,3 @@ jobs:
             ssh mopl@$SERVER "docker-compose down && docker-compose up -d"
             echo "Deployment to $SERVER completed."
           done
-
-
-
