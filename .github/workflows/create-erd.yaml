@@ -1,4 +1,4 @@
-name: GitOps Release container image
+name: Create ERD
 
 on:
   workflow_call:
