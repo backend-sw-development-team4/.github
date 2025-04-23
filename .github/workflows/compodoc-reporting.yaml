@@ -1,0 +1,51 @@
+name: Generate Compodoc Docs
+ 
+on:
+  workflow_call:
+    inputs:
+      repository_name:
+        description: 'Target repo name (e.g., apartment-service)'
+        required: true
+        type: string
+      repository_owner:
+	      description: 'Target org'
+        required: false
+        default: 'backend-sw-development-team4'
+        type: string
+ 
+jobs:
+  compodoc:
+    runs-on: [mopl-be]
+    steps:
+      - name: Checkout target repo release branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repository_owner }}/${{ inputs.repository_name }}
+          ref: release
+          path: ${{ inputs.repository_name }}
+
+      - name: Modify .npmrc with GitHub Token
+        run: |
+          NPMRC_PATH="${{ inputs.repository_name }}/.npmrc"
+          
+          if [ -f "$NPMRC_PATH" ]; then
+            echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> "$NPMRC_PATH"
+          else
+            echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > "$NPMRC_PATH"
+            echo "@backend-sw-development-team4:registry=https://npm.pkg.github.com" >> "$NPMRC_PATH"
+          fi
+      - name: Install Compodoc
+        working-directory: ${{ inputs.repository_name }}
+        run: |
+          npm install --save-dev @compodoc/compodoc --legacy-peer-deps
+ 
+      - name: Generate Compodoc documentation
+        working-directory: ${{ inputs.repository_name }}
+        run: |
+          npx compodoc -p tsconfig.json -d /Users/platformbiz/compodoc/${{ inputs.repository_name }}
+ 
+      - name: Inject <base href> in all HTML files
+        run: |
+          find /Users/platformbiz/compodoc/${{ inputs.repository_name }} -name "*.html" -exec sed -i '' 's|<head>|<head><base href="/${{ inputs.repository_name }}/">|' {} \;
+
+ 
