@@ -1,0 +1,98 @@
+name: Create ERD
+
+on:
+  workflow_call:
+    inputs:
+      application_name:
+        required: false
+        description: "Name of actual application"
+        type: string
+        default: ""
+      environment_name:
+        required: false
+        description: "Environment name for tagging"
+        type: string
+        default: "dev"
+
+jobs:
+  generate-erd:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Prepare working directory
+        run: |
+          mkdir -p /tmp/prisma-workspace
+          cp -r prisma /tmp/prisma-workspace/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          cd /tmp/prisma-workspace
+          npm init -y
+          npm install prisma prisma-erd-generator @mermaid-js/mermaid-cli @prisma/client
+
+      - name: Add ERD generator to schema.prisma and puppeteerConfig.json
+        run: |
+          cd /tmp/prisma-workspace
+          SCHEMA_CONTENT=$(cat prisma/schema.prisma)
+
+          cat > puppeteerConfig.json << EOL
+          {
+            "args": ["--no-sandbox"]
+          }
+          EOL
+
+          cat > prisma/schema.prisma << EOL
+          generator erd {
+            provider = "prisma-erd-generator"
+            output   = "../ERD.pdf"
+            puppeteerConfig = "./puppeteerConfig.json"
+          }
+
+          $SCHEMA_CONTENT
+          EOL
+
+      - name: Generate Prisma client and ERD
+        run: |
+          cd /tmp/prisma-workspace
+          npx prisma generate
+
+          # ERD 생성 확인 및 디버깅
+          echo "Checking for generated ERD file..."
+          find . -name "ERD.pdf" -type f
+          ls -la
+
+      - name: Copy ERD back to repository
+        run: |
+          ERD_FILE=$(find /tmp/prisma-workspace -name "ERD.pdf" -type f)
+
+          if [ -n "$ERD_FILE" ]; then
+            echo "Found ERD file at: $ERD_FILE"
+            cp "$ERD_FILE" ./
+          else
+            echo "ERD file not found. Checking directory structure:"
+            find /tmp/prisma-workspace -type f | grep -v "node_modules"
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions
+          aws-region: ap-northeast-2
+
+      - name: Push ERD to S3
+        run: |
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::366639460724:role/AWSTerraformAssumeRole --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          aws s3 cp ERD.pdf s3://mopl015-common-d-an2/erd/${{ inputs.application_name }}/ERD.pdf
