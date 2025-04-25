@@ -63,7 +63,7 @@ jobs:
           cat > prisma/schema.prisma << EOL
           generator erd {
             provider = "prisma-erd-generator"
-            output   = "../ERD.pdf"
+            output   = "../ERD.svg"
             puppeteerConfig = "./puppeteerConfig.json"
           }
 
@@ -75,10 +75,10 @@ jobs:
 
           # Check if ERD was generated
           echo "Checking for generated ERD file..."
-          find . -name "ERD.pdf" -type f
+          find . -name "ERD.svg" -type f
 
           # Copy ERD back to repository
-          ERD_FILE=$(find . -name "ERD.pdf" -type f)
+          ERD_FILE=$(find . -name "ERD.svg" -type f)
           if [ -n "$ERD_FILE" ]; then
             echo "Found ERD file at: $ERD_FILE"
             cp "$ERD_FILE" ../
@@ -89,7 +89,7 @@ jobs:
           fi
 
           cd ..
-          cp ERD.pdf $GITHUB_WORKSPACE/ERD.pdf
+          cp ERD.svg $GITHUB_WORKSPACE/ERD.svg
 
       - name: Generate ERD for prisma_v2 directory
         if: steps.check-dirs.outputs.prisma_v2_exists == 'true'
@@ -113,7 +113,7 @@ jobs:
           cat > prisma/schema.prisma << EOL
           generator erd {
             provider = "prisma-erd-generator"
-            output   = "../ERD_v2.pdf"
+            output   = "../ERD_v2.svg"
             puppeteerConfig = "./puppeteerConfig.json"
           }
 
@@ -125,10 +125,10 @@ jobs:
 
           # Check if ERD was generated
           echo "Checking for generated ERD_v2 file..."
-          find . -name "ERD_v2.pdf" -type f
+          find . -name "ERD_v2.svg" -type f
 
           # Copy ERD back to repository
-          ERD_FILE=$(find . -name "ERD_v2.pdf" -type f)
+          ERD_FILE=$(find . -name "ERD_v2.svg" -type f)
           if [ -n "$ERD_FILE" ]; then
             echo "Found ERD file at: $ERD_FILE"
             cp "$ERD_FILE" ../
@@ -139,7 +139,7 @@ jobs:
           fi
 
           cd ..
-          cp ERD_v2.pdf $GITHUB_WORKSPACE/ERD_v2.pdf
+          cp ERD_v2.svg $GITHUB_WORKSPACE/ERD_v2.svg
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -155,12 +155,12 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          # Upload ERD.pdf if it exists
-          if [ -f "ERD.pdf" ]; then
-            aws s3 cp ERD.pdf s3://mopl015-common-d-an2/erd/${{ inputs.application_name }}/ERD.pdf
+          # Upload ERD.svg if it exists
+          if [ -f "ERD.svg" ]; then
+            aws s3 cp ERD.svg s3://mopl015-common-d-an2/erd/${{ inputs.application_name }}/ERD.svg
           fi
 
-          # Upload ERD_v2.pdf if it exists
-          if [ -f "ERD_v2.pdf" ]; then
-            aws s3 cp ERD_v2.pdf s3://mopl015-common-d-an2/erd/${{ inputs.application_name }}/ERD_v2.pdf
+          # Upload ERD_v2.svg if it exists
+          if [ -f "ERD_v2.svg" ]; then
+            aws s3 cp ERD_v2.svg s3://mopl015-common-d-an2/erd/${{ inputs.application_name }}/ERD_v2.svg
           fi
