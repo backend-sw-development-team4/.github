@@ -8,11 +8,9 @@ on:
         required: true
         type: string
       repository_owner:
-	      description: 'Target org'
-        required: false
+        description: 'Target org'
         default: 'backend-sw-development-team4'
         type: string
- 
 jobs:
   compodoc:
     runs-on: [mopl-be]
