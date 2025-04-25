@@ -15,7 +15,7 @@ on:
       GH_MANAGEPACKAGE_TOKEN:
         required: false
         description: "If not provided, the repo creds will be used."
-        
+
 jobs:
   gitops-release:
     runs-on: ubuntu-latest
@@ -31,7 +31,7 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["CurrentVersion"].["inputs.target_server"] = "${{ inputs.image_tag }}"' serverlist/version.json
+            yq -i '.["CurrentVersion"].["${{ inputs.target_server }}"] = "${{ inputs.image_tag }}"' serverlist/version.json
 
       - name: Commit changes
         run: |
