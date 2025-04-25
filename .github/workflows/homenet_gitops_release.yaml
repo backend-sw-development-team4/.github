@@ -1,0 +1,55 @@
+name: GitOps Release container image
+
+on:
+  workflow_call:
+    inputs:
+      repository_name:
+        required: true
+        description: "Name of repository"
+        type: string
+      repository_ref:
+        required: false
+        description: "Ref value of repository"
+        type: string
+        default: "main"
+
+jobs:
+  gitops-release:
+    runs-on: ubuntu-latest
+    name: GitOps Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: release
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Update Version Info
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["LatestVersion"].["CurrentVersion"] = "${{ inputs.image_tag }}"' serverlist/version.json
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "chore: update version info ${{ needs.versioning.outputs.version }}" && \
+          # Push logic with retries
+          for i in {1..5}; do
+            git pull origin release --rebase
+            if git push origin release; then
+              echo "Push successful"
+              break
+            else
+              echo "Push failed, retrying ($i/5)..."
+              sleep 5
+            fi
+          done
+
+          # If the push still fails after retries
+          if [ $? -ne 0 ]; then
+            echo "Push failed after multiple attempts"
+            exit 1
+          fi
