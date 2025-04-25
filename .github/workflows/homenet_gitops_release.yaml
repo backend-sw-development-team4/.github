@@ -11,7 +11,11 @@ on:
         required: true
         description: "Ref value of repository"
         type: string
-
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used."
+        
 jobs:
   gitops-release:
     runs-on: ubuntu-latest
