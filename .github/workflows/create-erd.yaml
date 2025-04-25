@@ -21,33 +21,45 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Prepare working directory
+      - name: Check for Prisma directories
+        id: check-dirs
         run: |
-          mkdir -p /tmp/prisma-workspace
-          cp -r prisma /tmp/prisma-workspace/
+          if [ -d "prisma" ]; then
+            echo "prisma_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "prisma_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ -d "prisma_v2" ]; then
+            echo "prisma_v2_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "prisma_v2_exists=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "20"
 
-      - name: Install dependencies
+      - name: Generate ERD for prisma directory
+        if: steps.check-dirs.outputs.prisma_exists == 'true'
         run: |
+          mkdir -p /tmp/prisma-workspace
+          cp -r prisma /tmp/prisma-workspace/
+
           cd /tmp/prisma-workspace
           npm init -y
           npm install prisma prisma-erd-generator @mermaid-js/mermaid-cli @prisma/client
 
-      - name: Add ERD generator to schema.prisma and puppeteerConfig.json
-        run: |
-          cd /tmp/prisma-workspace
-          SCHEMA_CONTENT=$(cat prisma/schema.prisma)
-
+          # Create puppeteerConfig.json
           cat > puppeteerConfig.json << EOL
           {
             "args": ["--no-sandbox"]
           }
           EOL
 
+          # Add ERD generator to schema.prisma
+          SCHEMA_CONTENT=$(cat prisma/schema.prisma)
           cat > prisma/schema.prisma << EOL
           generator erd {
             provider = "prisma-erd-generator"
@@ -58,28 +70,76 @@ jobs:
           $SCHEMA_CONTENT
           EOL
 
-      - name: Generate Prisma client and ERD
-        run: |
-          cd /tmp/prisma-workspace
+          # Generate Prisma client and ERD
           npx prisma generate
 
-          # ERD 생성 확인 및 디버깅
+          # Check if ERD was generated
           echo "Checking for generated ERD file..."
           find . -name "ERD.pdf" -type f
-          ls -la
 
-      - name: Copy ERD back to repository
-        run: |
-          ERD_FILE=$(find /tmp/prisma-workspace -name "ERD.pdf" -type f)
-
+          # Copy ERD back to repository
+          ERD_FILE=$(find . -name "ERD.pdf" -type f)
           if [ -n "$ERD_FILE" ]; then
             echo "Found ERD file at: $ERD_FILE"
-            cp "$ERD_FILE" ./
+            cp "$ERD_FILE" ../
           else
-            echo "ERD file not found. Checking directory structure:"
-            find /tmp/prisma-workspace -type f | grep -v "node_modules"
+            echo "ERD file not found for prisma directory. Checking directory structure:"
+            find . -type f | grep -v "node_modules"
             exit 1
           fi
+
+          cd ..
+          cp ERD.pdf $GITHUB_WORKSPACE/ERD.pdf
+
+      - name: Generate ERD for prisma_v2 directory
+        if: steps.check-dirs.outputs.prisma_v2_exists == 'true'
+        run: |
+          mkdir -p /tmp/prisma-v2-workspace
+          cp -r prisma_v2 /tmp/prisma-v2-workspace/prisma
+
+          cd /tmp/prisma-v2-workspace
+          npm init -y
+          npm install prisma prisma-erd-generator @mermaid-js/mermaid-cli @prisma/client
+
+          # Create puppeteerConfig.json
+          cat > puppeteerConfig.json << EOL
+          {
+            "args": ["--no-sandbox"]
+          }
+          EOL
+
+          # Add ERD generator to schema.prisma
+          SCHEMA_CONTENT=$(cat prisma/schema.prisma)
+          cat > prisma/schema.prisma << EOL
+          generator erd {
+            provider = "prisma-erd-generator"
+            output   = "../ERD_v2.pdf"
+            puppeteerConfig = "./puppeteerConfig.json"
+          }
+
+          $SCHEMA_CONTENT
+          EOL
+
+          # Generate Prisma client and ERD
+          npx prisma generate
+
+          # Check if ERD was generated
+          echo "Checking for generated ERD_v2 file..."
+          find . -name "ERD_v2.pdf" -type f
+
+          # Copy ERD back to repository
+          ERD_FILE=$(find . -name "ERD_v2.pdf" -type f)
+          if [ -n "$ERD_FILE" ]; then
+            echo "Found ERD file at: $ERD_FILE"
+            cp "$ERD_FILE" ../
+          else
+            echo "ERD file not found for prisma_v2 directory. Checking directory structure:"
+            find . -type f | grep -v "node_modules"
+            exit 1
+          fi
+
+          cd ..
+          cp ERD_v2.pdf $GITHUB_WORKSPACE/ERD_v2.pdf
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -88,11 +148,19 @@ jobs:
           role-session-name: githubactions
           aws-region: ap-northeast-2
 
-      - name: Push ERD to S3
+      - name: Push ERDs to S3
         run: |
           identity=$(aws sts assume-role --role-arn arn:aws:iam::366639460724:role/AWSTerraformAssumeRole --role-session-name AWS)
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          aws s3 cp ERD.pdf s3://mopl015-common-d-an2/erd/${{ inputs.application_name }}/ERD.pdf
+          # Upload ERD.pdf if it exists
+          if [ -f "ERD.pdf" ]; then
+            aws s3 cp ERD.pdf s3://mopl015-common-d-an2/erd/${{ inputs.application_name }}/ERD.pdf
+          fi
+
+          # Upload ERD_v2.pdf if it exists
+          if [ -f "ERD_v2.pdf" ]; then
+            aws s3 cp ERD_v2.pdf s3://mopl015-common-d-an2/erd/${{ inputs.application_name }}/ERD_v2.pdf
+          fi
