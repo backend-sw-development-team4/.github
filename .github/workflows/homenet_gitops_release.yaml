@@ -3,15 +3,14 @@ name: GitOps Release container image
 on:
   workflow_call:
     inputs:
-      repository_name:
+      image_tag:
         required: true
         description: "Name of repository"
         type: string
-      repository_ref:
-        required: false
+      target_server:
+        required: true
         description: "Ref value of repository"
         type: string
-        default: "main"
 
 jobs:
   gitops-release:
@@ -28,14 +27,14 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["LatestVersion"].["CurrentVersion"] = "${{ inputs.image_tag }}"' serverlist/version.json
+            yq -i '.["CurrentVersion"].["inputs.target_server"] = "${{ inputs.image_tag }}"' serverlist/version.json
 
       - name: Commit changes
         run: |
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
-          git commit -m "chore: update version info ${{ needs.versioning.outputs.version }}" && \
+          git commit -m "chore: update version info ${{ inputs.target_server }} : ${{ inputs.image_tag }}" && \
           # Push logic with retries
           for i in {1..5}; do
             git pull origin release --rebase
