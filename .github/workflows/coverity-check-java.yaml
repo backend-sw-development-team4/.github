@@ -1,0 +1,148 @@
+name: source code quality check
+
+on:
+  workflow_call:
+    inputs:
+      cim_server:
+        required: false
+        description: "Name of repository"
+        type: string
+        default: "cim.kdoggy.systems"
+      repository_name:
+        required: true
+        description: "Name of repository"
+        type: string
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used."
+      CIM_PASSWD:
+        required: true
+        description: "If not provided, the repo creds will be used."
+      CIM_USER:
+        required: true
+        description: "If not provided, the repo creds will be used."
+jobs:
+  coverity:
+    runs-on: ubuntu-latest
+    outputs:
+      COVERITY_ISSUE_COUNT: ${{ steps.report.outputs.COVERITY_ISSUE_COUNT }} 
+    permissions:
+      deployments: write
+
+    container:
+      image: ghcr.io/hanwhavision/coverity-github:1.0.3
+      options: --user root
+      credentials:
+        username: jenkins
+        password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+  
+    name: Quality Check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          path: ./${{ inputs.repository_name }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: coverity
+        working-directory: ./${{ inputs.repository_name }}
+        run: |
+          echo "CI_STEP_StaticAnalysis "          
+          STREAM="mopl-${{ inputs.repository_name }}"
+
+          # Check if STREAM contains "mopl-mopl-"
+          if echo "$STREAM" | grep -q "mopl-mopl-"; then
+            # Replace "mopl-mopl-" with "mopl-" in STREAM
+            STREAM=$(echo "$STREAM" | sed 's/mopl-mopl-/mopl-/')
+          fi
+          if [ "$STREAM" = "mopl-admin" ]; then
+            # Replace "mopl-admin" with "mopl-mopl-admin"
+            STREAM="mopl-mopl-admin"
+          fi
+          echo $STREAM
+
+          CSA_DIR=/home/jenkins/cov-analysis
+          COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
+          COVERITY_CONFIG_XML=${GITHUB_WORKSPACE}/coverity_config/config.xml
+          COVERITY_INTERMEDIATE=${GITHUB_WORKSPACE}/coverity_emit_data
+
+          mkdir $COVERITY_CONFIG
+          mkdir $COVERITY_INTERMEDIATE
+          
+          APP_REVISION=`git rev-parse --short HEAD`;
+          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} ./gradlew build
+
+          ${CSA_DIR}/bin/cov-analyze --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
+          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${{ secrets.CIM_USER }}:${{ secrets.CIM_PASSWD }}@${{ inputs.cim_server }} --ssl --stream ${STREAM}_low --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
+
+          max_try_count=10;
+          while ! ${cov_commit} && [ $max_try_count -ne 0 ]; do
+              echo "Remaining  try-count : ${max_try_count}";
+              max_try_count=$((max_try_count-1)); 
+              sleep 120;
+              if [ $max_try_count -eq "0" ] ; then
+                  echo "fail cov-commit";
+                  exit 1;
+              fi
+          done
+
+          ${CSA_DIR}/bin/cov-analyze --aggressiveness-level high --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
+          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${{ secrets.CIM_USER }}:${{ secrets.CIM_PASSWD }}@${{ inputs.cim_server }} --ssl --stream ${STREAM}_high --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
+
+          max_try_count=10;
+          while ! ${cov_commit} && [ $max_try_count -ne 0 ]; do
+              echo "Remaining  try-count : ${max_try_count}";
+              max_try_count=$((max_try_count-1)); 
+              sleep 120;
+              if [ $max_try_count -eq "0" ] ; then
+                  echo "fail cov-commit";
+                  exit 1;
+              fi
+          done
+
+
+      - name: Coverity Report
+        id: report
+        run: |
+          echo "CI_STEP_CoverityReport"
+          REPO_NAME="${{ inputs.repository_name }}"
+          if echo "$REPO_NAME" | grep -q "mopl"; then
+            python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "$REPO_NAME" > output.txt
+          else
+            python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile "mopl-$REPO_NAME" > output.txt
+          fi
+
+          cat output.txt
+          defects_count=$(cat output.txt | grep "Defects Found" | sed 's/.*Defects Found : \([0-9]*\).*/\1/')
+          echo "COVERITY_ISSUE_COUNT=$defects_count" >> $GITHUB_OUTPUT
+
+  Update-gitops:
+    runs-on: ubuntu-latest
+    name: Update the Coverity results to GitOps
+    needs:
+      - coverity
+    steps:
+      - name: Checkout state repo
+        uses: actions/checkout@v3
+        with:
+          repository: backend-sw-development-team4/smartparking-gitops
+          path: ./gitops
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Update version information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.${{ inputs.repository_name }}.defects_count = "${{ needs.coverity.outputs.COVERITY_ISSUE_COUNT }}"' ./gitops/coverity_report.yaml
+
+      - name: Commit changes
+        working-directory: ./gitops
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit --allow-empty -m "chore: update ${{ inputs.repository_name }} Coverity results " && \
+          git pull origin main --rebase && \
+          git push origin main
