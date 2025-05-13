@@ -56,9 +56,26 @@ jobs:
         run: chmod +x gradlew
         working-directory: ./${{ inputs.repository_name }}
 
-      - name: Remove Java toolchain block from build.gradle
+      - name: Fully remove java toolchain block from build.gradle
         run: |
-          sed -i '/java {/,/}/d' build.gradle
+          awk '
+            /java[[:space:]]*\{/ {
+              in_block=1
+              brace_count=1
+              next
+            }
+
+            in_block {
+              brace_count += gsub(/\{/, "{")
+              brace_count -= gsub(/\}/, "}")
+              if (brace_count == 0) {
+                in_block=0
+              }
+              next
+            }
+
+            { print }
+          ' build.gradle > build.gradle.tmp && mv build.gradle.tmp build.gradle
         working-directory: ./${{ inputs.repository_name }}
 
       - name: coverity
