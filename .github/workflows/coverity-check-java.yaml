@@ -55,7 +55,7 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-        working-directory: ${{ env.BUILD_PATH }}
+        working-directory: ./${{ inputs.repository_name }}
 
       - name: coverity
         working-directory: ./${{ inputs.repository_name }}
