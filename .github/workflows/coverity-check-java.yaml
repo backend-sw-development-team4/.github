@@ -71,6 +71,9 @@ jobs:
           mkdir $COVERITY_CONFIG
           mkdir $COVERITY_INTERMEDIATE
           
+          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --java
+          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --kotlin
+
           APP_REVISION=`git rev-parse --short HEAD`;
           ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} ./gradlew build
 
