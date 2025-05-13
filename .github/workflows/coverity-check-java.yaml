@@ -107,7 +107,7 @@ jobs:
           ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --kotlin
 
           APP_REVISION=`git rev-parse --short HEAD`;
-          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} ./gradlew clean compileJava
+          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} ./gradlew build --no-daemon
 
           ${CSA_DIR}/bin/cov-analyze --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
           cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${{ secrets.CIM_USER }}:${{ secrets.CIM_PASSWD }}@${{ inputs.cim_server }} --ssl --stream ${STREAM}_low --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
