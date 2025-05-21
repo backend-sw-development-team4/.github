@@ -25,13 +25,9 @@ jobs:
       - name: Modify .npmrc with GitHub Token
         run: |
           NPMRC_PATH="${{ inputs.repository_name }}/.npmrc"
-          
-          if [ -f "$NPMRC_PATH" ]; then
-            echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> "$NPMRC_PATH"
-          else
-            echo "@backend-sw-development-team4:registry=https://npm.pkg.github.com" > "$NPMRC_PATH"
-            echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> "$NPMRC_PATH"
-          fi
+          echo "@backend-sw-development-team4:registry=https://npm.pkg.github.com" > "$NPMRC_PATH"
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> "$NPMRC_PATH"
+
       - name: Install Compodoc
         working-directory: ${{ inputs.repository_name }}
         run: |
