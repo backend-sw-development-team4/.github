@@ -330,6 +330,12 @@ jobs:
           cmd: |
             yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./store-front/env/prod/kustomization.yaml
 
+      - name: set vote-front prod image tag
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./vote-front/env/prod/kustomization.yaml
+
       - name: check image name and tag
         run: |
           egrep -r "newTag|newName" * |grep prod
