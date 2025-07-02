@@ -1,0 +1,110 @@
+name: Build deb Installer
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        description: "branch name to build from"
+        default: "develop"
+        type: string
+      image_tag:
+        required: true
+        description: "Additional tag for cretead image"
+        type: string
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN:
+        required: true
+
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: backend-sw-development-team4/mopl-homenet-frontend
+          path: ./frontend
+          ref: ${{ inputs.branch }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Docker build frontend image
+        run: |
+          cd frontend
+          docker build -t mopl-homenet-frontend:${{ inputs.image_tag }} --build-arg NPM_TOKEN=${{ secrets.GH_MANAGEPACKAGE_TOKEN }} .
+          docker tag mopl-homenet-frontend:${{ inputs.image_tag }} mopl-homenet-frontend:latest
+          docker save mopl-homenet-frontend:${{ inputs.image_tag }} -o ../frontend.tar
+
+      - name: Upload frontend image
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend
+          path: frontend.tar
+
+
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions
+          aws-region: ap-northeast-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
+
+      - name: Docker build frontend image
+        run: |
+          docker pull 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-homenet-an2:${{ inputs.image_tag }}
+          docker tag 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-homenet-an2:${{ inputs.image_tag }} mopl-homenet-backend:${{ inputs.image_tag }}
+          docker save mopl-homenet-backend:${{ inputs.image_tag }} -o backend.tar
+
+      - name: Upload backend image
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend
+          path: backend.tar
+
+  make-deb:
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    steps:
+      - name: Checkout packaging files
+        uses: actions/checkout@v4
+
+      - name: Download backend image
+        uses: actions/download-artifact@v4
+        with:
+          name: backend
+          path: shells/mopl-homenet-offline/tmp/
+
+      - name: Download frontend image
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend
+          path: shells/mopl-homenet-offline/tmp/
+
+      - name: Set permissions
+        run: |
+          chmod 755 shells/mopl-homenet-offline/DEBIAN/postinst
+          chmod +x shells/mopl-homenet-offline/usr/bin/*
+
+      - name: Replace image tag in docker-compose.yaml
+        run: |
+          sed -i "s|image: mopl-homenet-backend:latest|image: mopl-homenet-backend:${{ inputs.image_tag }}|" shells/mopl-homenet-offline/tmp/docker-compose.yaml
+
+      - name: Build .deb package
+        run: |
+          dpkg-deb --build shells/mopl-homenet-offline mopl-homenet-${{ inputs.image_tag }}.deb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mopl-homenet
+          path: mopl-homenet-${{ inputs.image_tag }}.deb
+
