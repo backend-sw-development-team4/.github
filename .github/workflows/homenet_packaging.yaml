@@ -82,27 +82,27 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: backend
-          path: shells/mopl-homenet-offline/tmp/
+          path: shells/mopl-homenet/tmp/
 
       - name: Download frontend image
         uses: actions/download-artifact@v4
         with:
           name: frontend
-          path: shells/mopl-homenet-offline/tmp/
+          path: shells/mopl-homenet/tmp/
 
       - name: Set permissions
         run: |
-          chmod 755 shells/mopl-homenet-offline/DEBIAN/postinst
-          chmod 755 shells/mopl-homenet-offline/DEBIAN/postrm
-          chmod +x shells/mopl-homenet-offline/usr/bin/*
+          chmod 755 shells/mopl-homenet/DEBIAN/postinst
+          chmod 755 shells/mopl-homenet/DEBIAN/postrm
+          chmod +x shells/mopl-homenet/usr/bin/*
 
       - name: Replace image tag in docker-compose.yaml
         run: |
-          sed -i "s|image: mopl-homenet-backend:latest|image: mopl-homenet-backend:${{ inputs.image_tag }}|" shells/mopl-homenet-offline/tmp/docker-compose.yaml
+          sed -i "s|image: mopl-homenet-backend:latest|image: mopl-homenet-backend:${{ inputs.image_tag }}|" shells/mopl-homenet/tmp/docker-compose.yaml
 
       - name: Build .deb package
         run: |
-          dpkg-deb --build shells/mopl-homenet-offline mopl-homenet-${{ inputs.image_tag }}.deb
+          dpkg-deb --build shells/mopl-homenet mopl-homenet-${{ inputs.image_tag }}.deb
 
       - uses: actions/upload-artifact@v4
         with:
