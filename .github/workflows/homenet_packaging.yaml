@@ -93,6 +93,7 @@ jobs:
       - name: Set permissions
         run: |
           chmod 755 shells/mopl-homenet-offline/DEBIAN/postinst
+          chmod 755 shells/mopl-homenet-offline/DEBIAN/postrm
           chmod +x shells/mopl-homenet-offline/usr/bin/*
 
       - name: Replace image tag in docker-compose.yaml
