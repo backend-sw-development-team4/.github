@@ -15,6 +15,9 @@ on:
     secrets:
       GH_MANAGEPACKAGE_TOKEN:
         required: true
+      AWS_ACCOUNT_ID:
+        required: true
+        description: "AWS Account ID to deploy the package"
 
 
 jobs:
@@ -104,8 +107,32 @@ jobs:
         run: |
           dpkg-deb --build shells/mopl-homenet mopl-homenet-${{ inputs.image_tag }}.deb
 
-      - uses: actions/upload-artifact@v4
+      # Login To HVC_Admin_Automation for Deploy
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          name: mopl-homenet
-          path: mopl-homenet-${{ inputs.image_tag }}.deb
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions
+          aws-region: ap-northeast-2
+
+      # Assume to Each Account as AWSControlTowerExecution
+      - name: Push build artifact to S3 Bucket and invalidation CloudFront
+        run: |
+          # Assume Role using an Automation Key
+          AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/AWSTerraformAssumeRole --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
+          # Upload qa version file to S3 bucket.
+          if [ "${{ inputs.branch }}" = "release" ]; then
+            aws s3 cp mopl-homenet-${{ inputs.image_tag }}.deb s3://mopl015-firmware-p-an2/homenet-${{ inputs.image_tag }}.deb --region ap-northeast-2
+          elif [ "${{ inputs.branch }}" = "develop" ]; then
+            aws s3 cp mopl-homenet-${{ inputs.image_tag }}.deb s3://mopl015-firmware-d-an2/homenet-${{ inputs.image_tag }}.deb --region ap-northeast-2
+          else
+            echo "Error: unsupported branch '${{ inputs.branch }}', only 'release' or 'develop' are allowed."
+            exit 1
+          fi
+
 
