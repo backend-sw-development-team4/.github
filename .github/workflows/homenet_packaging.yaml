@@ -128,10 +128,10 @@ jobs:
           # Upload qa version file to S3 bucket.
           if [ "${{ inputs.branch }}" = "release" ]; then
             aws s3 cp mopl-homenet-${{ inputs.image_tag }}.deb s3://mopl015-firmware-p-an2/homenet-${{ inputs.image_tag }}.deb --region ap-northeast-2
-          elif [ "${{ inputs.branch }}" = "develop" ]; then
+          elif [ "${{ inputs.branch }}" = "predev" ]; then
             aws s3 cp mopl-homenet-${{ inputs.image_tag }}.deb s3://mopl015-firmware-d-an2/homenet-${{ inputs.image_tag }}.deb --region ap-northeast-2
           else
-            echo "Error: unsupported branch '${{ inputs.branch }}', only 'release' or 'develop' are allowed."
+            echo "Error: unsupported branch '${{ inputs.branch }}', only 'release' or 'predev' are allowed."
             exit 1
           fi
 
