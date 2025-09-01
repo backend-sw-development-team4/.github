@@ -131,13 +131,13 @@ jobs:
           tags: |
             "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
 
-  m5-fulltest-build-and-push-ecr:
+  device5-build-and-push-ecr:
     name: Container image build and push to ecr for mobile
     runs-on: ubuntu-latest
     environment: 
       name: ${{ inputs.environment_name }}
     needs: create-tag
-    if: ${{ inputs.environment_name  == 'm5-fulltest' }}
+    if: ${{ inputs.environment_name  == 'device5' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
