@@ -1,0 +1,68 @@
+name: Create Alert
+
+run-name: 'Create Alert for ${{ inputs.service }} release version: ${{ inputs.release_version }} in environment: ${{ inputs.release_env }}'
+on:
+  workflow_call:
+    inputs:
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
+      release_env:
+        description: 'Release Environment'
+        required: true
+        default: ""
+        type: string
+      service:
+        description: 'prod env S3 Bucket Name'
+        required: true
+        default: ""
+        type: string
+      
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  create-alert:
+    name: Build Deploy
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - name: Create Teams Alert
+        run: |
+          SERVICE="${{ inputs.service }}"
+          VERSION="${{ inputs.release_version }}"
+          RELEASE_ENV="${{ inputs.release_env }}"
+          TEAMS_WEBHOOK_URL="${{ secrets.TEAMS_WEBHOOK_URL }}"
+          MESSAGE_PAYLOAD=$(cat <<EOF
+          {
+            "type": "message",
+            "attachments": [
+              {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "contentUrl": null,
+                "content": {
+                  "\$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                  "type": "AdaptiveCard",
+                  "version": "1.2",
+                  "body": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${SERVICE} (${VERSION}) Deployment is started in ${RELEASE_ENV} environment",
+                      "style": "heading",
+                      "wrap": true
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+          EOF
+          )
+          curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d "${MESSAGE_PAYLOAD}" \
+            "${TEAMS_WEBHOOK_URL}"
+
