@@ -69,14 +69,7 @@ permissions:
   contents: read
 
 jobs:
-  make-alert:
-    name: Make Alert
-    uses: ./.github/workflows/create-alert-sp012.yaml
-    with:
-      service: ${{ inputs.s3_prefix }}
-      release_version: ${{ inputs.release_version }}
-      release_env: ${{ inputs.release_env }}
-      
+
   qa-build-deploy:
     name: qa Build Deploy
     if: ${{ inputs.release_env == 'qa' }}
