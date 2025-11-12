@@ -1,30 +1,36 @@
 name: test
 
-run-name: aws role test
+run-name: aws s3 test
 
 on:
   workflow_dispatch:
 
-permissions: write-all
+permissions:
+  id-token: write
+  contents: read
+  actions: read
 
 jobs:
-  configure-aws-credential:
-    name: GitHub Actions
+  test-upload:
     runs-on: ubuntu-latest
-    environment: main
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
-          role-session-name: githubactions
-          aws-region: us-east-1       
 
-      - name: Check assumed result # Test Assume Role Result
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create test file
         run: |
-          # Assume Role using an Automation Key
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::852637827699:role/AWSTerraformAssumeRole --role-session-name AWS)
-          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          aws s3 ls mopl015-common-p-an2
+          mkdir -p test-artifacts
+          echo "This is a test upload file." > test-artifacts/test.txt
+          echo "✅ Created test file:"
+          ls -l test-artifacts/
+
+      - name: Upload to S3 (using custom action)
+        uses: hanwhavision/.github/.github/actions/upload-apk-to-s3@JSMPFB-40
+        with:
+          file: test-artifacts/test.txt
+          destination: s3://mopl015-qacommon-q-an2/apk
+          role_arn: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          aws_accountid: 103827304329
+          app_name: guard
+          version: 1.26.0(121)
