@@ -70,7 +70,7 @@ jobs:
           if grep -q "frontend" <<<"${{ inputs.release_env }}"; then
             frontend=deploy
           fi
-          if grep -q "licensefront" <<<"${{ inputs.release_env }}"; then
+          if grep -q "lf" <<<"${{ inputs.release_env }}"; then
             licensefront=deploy
           fi
 
