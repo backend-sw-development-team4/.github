@@ -344,7 +344,7 @@ jobs:
     secrets: inherit
 
   sp012-license-frontend-qa:
-    if: ${{ needs.initial_setting.outputs.licensefront == 'deploy' && needs.initial_setting.outputs.deploy_env == 'qa' }}
+    if: ${{ needs.initial_setting.outputs.licensefrontend == 'deploy' && needs.initial_setting.outputs.deploy_env == 'qa' }}
     needs: [initial_setting, create-release-qa]
     name: License Frontend Module Deploy(QA)
     uses: ./.github/workflows/build-and-push-view-to-s3-sp012.yaml
@@ -471,7 +471,7 @@ jobs:
     secrets: inherit
 
   sp012-license-frontend-prod:
-    if: ${{ needs.initial_setting.outputs.licensefront == 'deploy' && needs.initial_setting.outputs.deploy_env == 'prod' }}
+    if: ${{ needs.initial_setting.outputs.licensefrontend == 'deploy' && needs.initial_setting.outputs.deploy_env == 'prod' }}
     needs: [initial_setting, create-release-prod]
     name: License Frontend Module Deploy(Prod)
     uses: ./.github/workflows/build-and-push-view-to-s3-sp012.yaml
