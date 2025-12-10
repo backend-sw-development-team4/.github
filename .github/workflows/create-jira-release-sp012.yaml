@@ -32,6 +32,7 @@ jobs:
       payment: ${{ steps.set_env.outputs.payment }}
       license: ${{ steps.set_env.outputs.license }}
       gateway: ${{ steps.set_env.outputs.gateway }}
+      licensefrontend: ${{ steps.set_env.outputs.licensefront }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -69,6 +70,9 @@ jobs:
           if grep -q "frontend" <<<"${{ inputs.release_env }}"; then
             frontend=deploy
           fi
+          if grep -q "licensefront" <<<"${{ inputs.release_env }}"; then
+            licensefront=deploy
+          fi
 
         
           echo "::set-output name=branch::$branch"
@@ -78,6 +82,7 @@ jobs:
           echo "::set-output name=payment::$payment"
           echo "::set-output name=license::$license"
           echo "::set-output name=gateway::$gateway"
+          echo "::set-output name=licensefront::$licensefront"
   check-prod:
     name: Check Prod
     needs: [initial_setting]
@@ -100,7 +105,7 @@ jobs:
       repo: ${{ steps.determine-repos.outputs.repo }}
     strategy:
       matrix:
-        env: ['license','gateway','backend','frontend','payment' ]
+        env: ['license','gateway','backend','frontend','payment', 'licensefront' ]
     steps:
       - name: Determine repository names
         id: determine-repos
@@ -124,6 +129,10 @@ jobs:
           elif [ ${{ matrix.env }} == "frontend" ]; then
             if [ ${{ needs.initial_setting.outputs.frontend }}  == "deploy" ]; then
               repo=saleshub-frontend
+            fi
+          elif [ ${{ matrix.env }} == "licensefront" ]; then
+            if [ ${{ needs.initial_setting.outputs.licensefrontend }}  == "deploy" ]; then
+              repo=license-frontend
             fi
           fi
           echo "repo=$repo" >> $GITHUB_OUTPUT
@@ -194,6 +203,10 @@ jobs:
           elif [ ${{ matrix.env }} == "frontend" ]; then
             if [ ${{ needs.initial_setting.outputs.frontend }}  == "deploy" ]; then
               repo=saleshub-frontend
+            fi
+          elif [ ${{ matrix.env }} == "licensefront" ]; then
+            if [ ${{ needs.initial_setting.outputs.licensefrontend }}  == "deploy" ]; then
+              repo=license-frontend
             fi
           fi
           echo "repo=$repo" >> $GITHUB_OUTPUT
@@ -306,28 +319,28 @@ jobs:
       s3_prefix: payment
     secrets: inherit
 
-  sp012-frontend-qa:
-    if: ${{ needs.initial_setting.outputs.frontend == 'deploy' && needs.initial_setting.outputs.deploy_env == 'qa' }}
+  sp012-license-frontend-qa:
+    if: ${{ needs.initial_setting.outputs.licensefront == 'deploy' && needs.initial_setting.outputs.deploy_env == 'qa' }}
     needs: [initial_setting, create-release-qa]
-    name: Frontend Module Deploy(QA)
+    name: License Frontend Module Deploy(QA)
     uses: ./.github/workflows/build-and-push-view-to-s3-sp012.yaml
     with:
       working_dir: ./
       release_version: ${{ inputs.release_version }}
       release_env: ${{ needs.initial_setting.outputs.deploy_env }}
-      release_repo: saleshub-frontend
+      release_repo: license-frontend
       qa_s3_bucket: sp012-build-q-ue1
-      qa_front_s3_bucket: sp012-frontend-q-ue1
+      qa_front_s3_bucket: sp012-licenseview-q-ue1
       prod_s3_bucket: sp012-build-p-ue1
-      prod_front_s3_bucket: sp012-frontend-p-ue1
-      dev_front_s3_bucket: sp012-frontend-d-an2-001
+      prod_front_s3_bucket: sp012-licenseview-p-ue1
+      dev_front_s3_bucket: sp012-licenseview-d-an2-001
       dev_s3_bucket: sp012-build-d-an2-001
       qa_aws_account: '060636281042'
       prod_aws_account: '497796310523'
       dev_aws_account: '540528117317'
-      s3_prefix: frontend
-      qa_cloudfront_distribution_id: E3H96P9LID60CL
-      prod_cloudfront_distribution_id: EJGVL5C56392T
+      s3_prefix: licensefrontend
+      qa_cloudfront_distribution_id: E3PUAJVJR1OPA9
+      prod_cloudfront_distribution_id: E355ZCEVPRO90V
     secrets: inherit
 
 
@@ -433,6 +446,29 @@ jobs:
       prod_cloudfront_distribution_id: EJGVL5C56392T
     secrets: inherit
 
+  sp012-license-frontend-prod:
+    if: ${{ needs.initial_setting.outputs.licensefront == 'deploy' && needs.initial_setting.outputs.deploy_env == 'prod' }}
+    needs: [initial_setting, create-release-prod]
+    name: License Frontend Module Deploy(Prod)
+    uses: ./.github/workflows/build-and-push-view-to-s3-sp012.yaml
+    with:
+      working_dir: ./
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ needs.initial_setting.outputs.deploy_env }}
+      release_repo: license-frontend
+      qa_s3_bucket: sp012-build-q-ue1
+      qa_front_s3_bucket: sp012-licenseview-q-ue1
+      prod_s3_bucket: sp012-build-p-ue1
+      prod_front_s3_bucket: sp012-licenseview-p-ue1
+      dev_front_s3_bucket: sp012-licenseview-d-an2-001
+      dev_s3_bucket: sp012-build-d-an2-001
+      qa_aws_account: '060636281042'
+      prod_aws_account: '497796310523'
+      dev_aws_account: '540528117317'
+      s3_prefix: licensefrontend
+      qa_cloudfront_distribution_id: E3PUAJVJR1OPA9
+      prod_cloudfront_distribution_id: E355ZCEVPRO90V
+    secrets: inherit
 ################################################################
 
 
