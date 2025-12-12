@@ -150,7 +150,6 @@ jobs:
           
           # Upload qa version file to S3 bucket.
           aws s3 cp ${{ inputs.qa_version_json_file_path }} s3://mopl015-common-p-an2/${{ inputs.qa_version_json_file_path }} --region ap-northeast-2
-          aws s3 cp qa_version.yaml s3://mopl015-common-p-an2/qa_version.yaml --region ap-northeast-2
           # Setting CloudFront
           aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*"
 
@@ -261,8 +260,8 @@ jobs:
           role-session-name: githubactions
           aws-region: ap-northeast-2
 
-      #After copying, update the production environment with server version information from prod_version.yaml  
-      - name: Copy the qa_version.yaml file to prod_version.yaml file
+      #After copying, update the production environment with server version information from prod_version.json
+      - name: Copy the qa_version.json file to prod_version.json file
         run: |
           # Assume Role using an Automation Key
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.mopl_prod_aws_accountid }}:role/AWSTerraformAssumeRole --role-session-name AWS)
@@ -274,10 +273,7 @@ jobs:
           pwd
           ls -la
           aws s3 cp s3://mopl015-common-p-an2/qa_version.json qa_latest_version.json --region ap-northeast-2
-          aws s3 cp s3://mopl015-common-p-an2/qa_version.yaml qa_latest_version.yaml --region ap-northeast-2
-          cp qa_latest_version.yaml prod_version.yaml
           cp qa_latest_version.json prod_version.json
-          rm qa_latest_version.yaml qa_latest_version.json
 
       - name: Update version.json information
         if: ${{ inputs.application_name }} != ""
@@ -299,42 +295,34 @@ jobs:
           cmd: |
             yq -i '.["MainVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' prod_version.json
 
-      - name: Update image name and tag
+      - name: Update Backend & Frontend image tags from version.json
         run: |
-          while IFS= read -r line; do
-            if [[ "${line:0:1}" != " " ]]; then
-              # Extract the value after "service-name:"
-              service_name=$(echo "$line" | awk -F':' '{print $1}' )
-            elif [[ $line == *"image-tag"* ]]; then
-              # Extract the value after "image-tag:"
-              image_tag=$(echo "$line" | awk '{print $2}')
-            elif [[ $line == *"image-repo"* ]]; then
-              # Extract the value after "commit-sha:"
-              image_repo=$(echo "$line" | awk '{print $2}')
-              yq -i '
-                .images[0].newName = "'$image_repo'" |
-                .images[0].newTag = "'$image_tag'"
-              ' ./$service_name/env/prod/kustomization.yaml || true
-            fi
-          done < prod_version.yaml
-
-      - name: set mopl-admin prod image tag
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./mopl-admin/env/prod/kustomization.yaml
-
-      - name: set store-front prod image tag
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./store-front/env/prod/kustomization.yaml
-
-      - name: set vote-front prod image tag
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./vote-front/env/prod/kustomization.yaml
+          update_images () {
+            local section=$1
+            local prefix=$2
+          
+            jq -r ".$section | to_entries[] | \"\(.key) \(.value)\"" version.json | \
+            while read service_name image_tag; do
+              kustomize_file="./$service_name/env/prod/kustomization.yaml"
+          
+              if [ -f "$kustomize_file" ]; then
+                final_tag="${prefix}${image_tag}"
+                echo "[$section] $service_name -> $final_tag"
+          
+                yq -i '
+                  (.images[] | select(.name == "'$service_name'") | .newTag) = "'$final_tag'"
+                ' "$kustomize_file"
+              else
+                echo "[$section] $kustomize_file not found"
+              fi
+            done
+          }
+          
+          # Backend: prefix null
+          update_images "BackendVersion" ""
+          
+          # Frontend: prod- prefix
+          update_images "FrontendVersion" "prod-"
 
       - name: check image name and tag
         run: |
@@ -373,30 +361,6 @@ jobs:
           git commit -m "ci: deploy mopl prod for ${{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
-
-      - name: Update msa prod tag
-        run: |
-          while IFS= read -r line; do
-          if [[ "${line:0:1}" != " " ]]; then
-            service_name=$(echo "$line" | awk -F':' '{print $1}' )
-          elif [[ $line == *"repo-name"* ]]; then
-            repo_name=$(echo "$line" | awk -F'/' '{print $NF}')
-          elif [[ $line == *"image-tag"* ]]; then
-            version_tag=$(echo "$line" | awk '{print $2}')
-            echo "Service Name: $service_name"
-            echo "rep url: $repo_name"
-            echo "version tag: $version_tag"
-            git clone https://${{ secrets.GH_MANAGEPACKAGE_TOKEN }}@github.com/${{ inputs.git_org }}/${repo_name}.git ${service_name}_tag
-            cd ${service_name}_tag
-            pwd
-            git tag -d prod || true
-            git push --delete origin prod || true 
-            git checkout $version_tag
-            git tag prod
-            git push origin prod
-            cd ..
-          fi
-          done < prod_version.yaml
 
       - name: Create Github Release
         uses: actions/create-release@v1
