@@ -127,7 +127,7 @@ jobs:
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
-          git commit -m "ci: deploy mopl prod for ${{ inputs.release_version }}" && \
+          git commit -m "ci: deploy mopl qa for ${{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
 
@@ -201,27 +201,6 @@ jobs:
       - name: Dummy Step
         run: echo "This is a dummy step."
 
-  sqe-approval: 
-    name: Waiting for SQE Approval (PROD)
-    if: ${{ inputs.release_env == 'PROD' }}
-    needs: [initial_setting]
-    environment: sqe-approval
-    runs-on: ubuntu-latest
-    steps: 
-      - name: Dummy Step
-        run: echo "This is a dummy step."
-
-  sqa-approval: 
-    name: Waiting for SQA Approval (PROD)
-    if: ${{ inputs.release_env == 'PROD' }}
-    needs: [initial_setting]
-    environment: sqa-approval
-    runs-on: ubuntu-latest
-    steps: 
-      - name: Dummy Step
-        run: echo "This is a dummy step."
-
-
   create-prod-jira-release:
     name: deploy Prod (PROD)
     outputs:
@@ -230,8 +209,6 @@ jobs:
     needs:
       - initial_setting
       - devops-approval
-      - sqa-approval
-      - sqe-approval
     runs-on: ubuntu-latest
     environment: main
     steps:
@@ -248,32 +225,10 @@ jobs:
           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-      - name: check image name and tag
-        run: |
-          egrep -r "newTag|newName" * |grep prod
-
-      # Login To HVC_Admin_Automation for Deploy
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
-          role-session-name: githubactions
-          aws-region: ap-northeast-2
-
       #After copying, update the production environment with server version information from prod_version.json
       - name: Copy the qa_version.json file to prod_version.json file
         run: |
-          # Assume Role using an Automation Key
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.mopl_prod_aws_accountid }}:role/AWSTerraformAssumeRole --role-session-name AWS)
-          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          
-          # get qa version file to local.
-          pwd
-          ls -la
-          aws s3 cp s3://mopl015-common-p-an2/qa_version.json qa_latest_version.json --region ap-northeast-2
-          cp qa_latest_version.json prod_version.json
+          cp qa_version.json prod_version.json
 
       - name: Update version.json information
         if: ${{ inputs.application_name }} != ""
@@ -295,13 +250,13 @@ jobs:
           cmd: |
             yq -i '.["MainVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' prod_version.json
 
-      - name: Update Backend & Frontend image tags from version.json
+      - name: Update Backend & Frontend image tags from prod_version.json
         run: |
           update_images () {
             local section=$1
             local prefix=$2
           
-            jq -r ".$section | to_entries[] | \"\(.key) \(.value)\"" version.json | \
+            jq -r ".$section | to_entries[] | \"\(.key) \(.value)\"" prod_version.json | \
             while read service_name image_tag; do
               kustomize_file="./$service_name/env/prod/kustomization.yaml"
           
@@ -324,12 +279,7 @@ jobs:
           # Frontend: prod- prefix
           update_images "FrontendVersion" "prod-"
 
-      - name: check image name and tag
-        run: |
-          egrep -r "newTag|newName" * |grep prod
-          cat ./device-service/env/prod/kustomization.yaml
-          cat ./mopl-admin/env/prod/kustomization.yaml
-
+      # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

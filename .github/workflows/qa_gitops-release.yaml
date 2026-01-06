@@ -97,27 +97,27 @@ jobs:
               yq -i '.BackendVersion["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/qa_version.json
             fi
 
-      - name: Commit changes
-        working-directory: ./gitops
-        run: |
-          git config user.name "GitHub Actions Bot" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
-          # Push logic with retries
-          for i in {1..5}; do
-            git pull origin main --rebase
-            if git push origin main; then
-              echo "Push successful"
-              break
-            else
-              echo "Push failed, retrying ($i/5)..."
-              sleep 5
-            fi
-          done
 
-          # If the push still fails after retries
-          if [ $? -ne 0 ]; then
-            echo "Push failed after multiple attempts"
-            exit 1
-          fi
+      - name: Create QA GitOps Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          path: ./gitops
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          commit-message: |
+            chore: update ${{ inputs.application_name }} image tag to ${{ inputs.image_tag }}
+          branch: |
+            gitops/${{ inputs.application_name }}-${{ inputs.image_tag }}
+          title: |
+            Update QA image tag for ${{ inputs.application_name }}: ${{ inputs.image_tag }}
+          body: |
+            This PR updates the deployment configuration for ${{ inputs.application_name }}.
+
+            - Image name: `${{ inputs.image_name }}`
+            - Image tag: `${{ inputs.image_tag }}`
+            - Environment: `${{ vars.ENV }}`
+
+            Please review and merge after verification.
+          base: main
+          labels: |
+            qa_deploy
+          delete-branch: true
