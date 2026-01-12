@@ -1,0 +1,141 @@
+name: GitOps Release (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+      git_org:
+        required: true
+        type: string
+      repo:
+        required: true
+        type: string
+      release_branch:
+        required: true
+        type: string
+      release_version:
+        required: true
+        type: string
+      s3_aws_accountid:
+        required: true
+        type: string
+      s3_bucket_name:
+        required: true
+        type: string
+      cloudfront_distribution_id:
+        required: true
+        type: string
+      jira_key:
+        required: true
+        type: string
+      project_name:
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.git_org }}/${{ inputs.repo }}
+          ref: refs/heads/${{ inputs.release_branch }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Copy the qa_version.json file to prod_version.json file
+        if: ${{ inputs.env == 'PROD' }}
+        run: |
+          cp qa_version.json prod_version.json
+
+      # 공통 로직 (QA / PROD 지원)
+      - name: Update Backend & Frontend image tags
+        run: |
+          update_images () {
+            ENV_LOWER=$(echo "${{ inputs.env }}" | tr '[:upper:]' '[:lower:]')
+            local section=$1
+            local prefix=$2
+
+            jq -r ".$section | to_entries[] | \"\(.key) \(.value)\"" ${ENV_LOWER}_version.json  | \
+            while read service_name image_tag; do
+              kustomize_file="./$service_name/env/${ENV_LOWER}/kustomization.yaml"
+          
+              if [ -f "$kustomize_file" ]; then
+                final_tag="${prefix}${image_tag}"
+                echo "[$section] $service_name -> $final_tag"
+          
+                yq -i '
+                  .images[0].newTag = "'$final_tag'"
+                ' "$kustomize_file"
+              else
+                echo "[$section] $kustomize_file not found"
+              fi
+            done
+          }
+
+          update_images "BackendVersion" ""
+          update_images "FrontendVersion" "${{ inputs.env == 'PROD' && 'prod-' || '' }}"
+
+      - name: Update version.json
+        run: |
+          ENV_LOWER=$(echo "${{ inputs.env }}" | tr '[:upper:]' '[:lower:]')
+          yq -i '
+                .MainVersion.${{ inputs.project_name }}ServiceMainVersion = "${{ inputs.release_version }}" |
+                .MainVersion.ReleaseDate = "'"$(date '+%Y-%m-%d %H:%M:%S')"'" 
+              ' ${ENV_LOWER}_version.json
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git add --all
+          git commit -m "ci: deploy ${{ inputs.env }} for ${{ inputs.release_version }}" || true
+          git push origin ${{ inputs.release_branch }}
+
+      # This step sets up credentials to assume the deployment role in the main AWS account.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions  # Set a name for the AWS role session
+          aws-region: ap-northeast-2  # Specify the AWS region (modify based on your deployment needs)
+
+      - name: Upload version.json to S3 & CloudFront invalidation
+        run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.s3_aws_accountid }}:role/AWSTerraformAssumeRole --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
+          # Upload version file to S3 bucket.
+          aws s3 cp "${{ inputs.env }}_version.json" s3://${{ inputs.s3_bucket_name }}/"${{ inputs.env }}_version.json" --region ap-northeast-2
+          # Setting CloudFront
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront_distribution_id }} --paths "/*"
+
+      - name: Create Github Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+        with:
+          tag_name: ${{ inputs.release_version }}
+          release_name: ${{ inputs.release_version }}
+          repo: ${{ inputs.repo }}
+          commitish: ${{ inputs.release_branch }}
+          body: |
+            :robot_face: This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. :mag:
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. :telephone_receiver:
+            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+
+      - name: Github Release Result
+        run: |
+          echo "is ${{ inputs.env }} deployment"
+          echo ":mag: Check the release results"
+          echo ":link: Github Release Link : https://github.com/${{ inputs.git_org }}/${{ inputs.repo }}/releases/tag/${{ inputs.release_version }}"

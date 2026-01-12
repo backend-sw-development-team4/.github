@@ -20,49 +20,19 @@ on:
         required: true
         default: ""
         type: string            
-      git_org:
-        description: 'github organization'
-        required: false
-        default: "backend-sw-development-team4"
-        type: string
-      qa_version_json_file_path:
-        required: false
-        description: "Path to the json file described all version of application"
-        type: string
-        default: "qa_version.json"
-      prod_version_json_file_path:
-        required: false
-        description: "Path to the json file described all version of application"
-        type: string
-        default: "prod_version.json"
-      mopl_qa_aws_accountid:
-        required: false
-        description: "mopl qa aws account id"
-        type: string
-        default: "852637827699"
-      mopl_prod_aws_accountid:
-        required: false
-        description: "mopl qa aws account id"
-        type: string
-        default: "852637827699"
-      qa_cloudfront_distribution_id:
-        required: false
-        description: "cloudfront_distribution_id"
-        type: string
-        default: "EXPTNFYJG8CR8"
-      prod_cloudfront_distribution_id:
-        required: false
-        description: "cloudfront_distribution_id"
-        type: string
-        default: "EXPTNFYJG8CR8"
 
 permissions: write-all
 
 jobs:
   initial_setting:
     outputs:
+      git_org: ${{ steps.set_env.outputs.git_org }}
       repo: ${{ steps.set_env.outputs.repo }}
       release_branch: ${{ steps.set_env.outputs.release_branch }}
+      s3_aws_accountid: ${{ steps.set_env.outputs.s3_aws_accountid }}
+      s3_bucket_name: ${{ steps.set_env.outputs.s3_bucket_name }}
+      cloudfront_distribution_id: ${{ steps.set_env.outputs.cloudfront_distribution_id }}
+      project_name: ${{ steps.set_env.outputs.project_name }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -70,281 +40,105 @@ jobs:
         id: set_env
         run: |
           if [ ${{ inputs.jira_key }}  == "MCP" ]; then
+            git_org=backend-sw-development-team4
             repo=smartparking-gitops
             release_branch=main
-          elif [ ${{ inputs.jira_key }}  == "KCP" ]; then
+            s3_aws_accountid=852637827699
+            s3_bucket_name=mopl015-common-p-an2
+            cloudfront_distribution_id=EXPTNFYJG8CR8
+            project_name=Mopl
+          elif [ ${{ inputs.jira_key }}  == "KP" ]; then
+            git_org=hanwhavision
             repo=keeper-gitops
-            release_branch=main
+            release_branch=release
+            s3_aws_accountid=528461295709
+            s3_bucket_name=keeper-common-p-an2
+            cloudfront_distribution_id=E275NKNZ2GZ1VA
+            project_name=Keeper
           fi
           
+          echo "git_org=$git_org" >> $GITHUB_OUTPUT
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
-          
-  create-qa-jira-release:
-    name: deploy QA (QA)
-    outputs:
-      async_image_tag: ${{ steps.async_image_tag.outputs.async_image_tag }}
+          echo "s3_aws_accountid=$s3_aws_accountid" >> $GITHUB_OUTPUT
+          echo "s3_bucket_name=$s3_bucket_name" >> $GITHUB_OUTPUT
+          echo "cloudfront_distribution_id=$cloudfront_distribution_id" >> $GITHUB_OUTPUT
+          echo "project_name=$project_name" >> $GITHUB_OUTPUT
+
+  # QA gitops Release
+  release-qa:
+    name: Release QA
+    needs: initial_setting
     if: ${{ inputs.release_env == 'QA' }}
-    needs: [initial_setting]
-    environment: main
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-          
-      - name: Install yq
-        run: |
-          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
-
-      - name: Update version.json information
-        if: ${{ inputs.application_name }} != ""
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
-
-      - name: Get Time
-        id: time
-        uses: nanzm/get-time-action@master
-        with:
-          timeZone: UTC-9
-          format: 'YYYY-MM-DD HH:mm:ss'
-
-      - name: Update Release date to version.json information
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["MainVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
-
-      - name: Commit changes
-        run: |
-          git config user.name "GitHub Actions Bot" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit -m "ci: deploy mopl qa for ${{ inputs.release_version }}" && \
-          git push origin main
-        continue-on-error: true
-
-      # Login To HVC_Admin_Automation for Deploy
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
-          role-session-name: githubactions
-          aws-region: ap-northeast-2
-
-      # Assume to Each Account as AWSControlTowerExecution
-      - name: Push build artifact to S3 Bucket and invalidation CloudFront
-        run: |
-          # Assume Role using an Automation Key
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.mopl_qa_aws_accountid }}:role/AWSTerraformAssumeRole --role-session-name AWS)
-          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          
-          # Upload qa version file to S3 bucket.
-          aws s3 cp ${{ inputs.qa_version_json_file_path }} s3://mopl015-common-p-an2/${{ inputs.qa_version_json_file_path }} --region ap-northeast-2
-          # Setting CloudFront
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cloudfront_distribution_id }} --paths "/*"
-
-      - name: Create Github Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-        with:
-          tag_name: ${{ inputs.release_version }}
-          release_name: ${{ inputs.release_version }}
-          repo: ${{ needs.initial_setting.outputs.repo }}
-          commitish: ${{ needs.initial_setting.outputs.release_branch }}
-          body: |
-            :robot_face: This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release. :mag:
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. :telephone_receiver:
-            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
-
-      - name: Github Release Result
-        run: |
-          echo "is QA"
-          echo ":mag: Check the release results"
-          echo ":link: Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
-
-      # Retrieve the version tag for async-service from a JSON file
-      - name: get QA async_image_tag
-        id: async_image_tag
-        run: |
-          async_image_tag=$(jq -r '.["LambdaVersion"].["async-service"]' qa_version.json)
-          echo "async_image_tag=$async_image_tag" >> $GITHUB_OUTPUT
+    uses: backend-sw-development-team4/.github/.github/workflows/gitops_update.yaml@main
+    secrets: inherit
+    with:
+      env: ${{ inputs.release_env }}
+      git_org: ${{ needs.initial_setting.outputs.git_org }}
+      repo: ${{ needs.initial_setting.outputs.repo }}
+      release_branch: ${{ needs.initial_setting.outputs.release_branch }}
+      release_version: ${{ inputs.release_version }}
+      s3_aws_accountid: ${{ needs.initial_setting.outputs.s3_aws_accountid }}
+      s3_bucket_name: ${{ needs.initial_setting.outputs.s3_bucket_name }}
+      cloudfront_distribution_id: ${{ needs.initial_setting.outputs.cloudfront_distribution_id }}
+      project_name: ${{ needs.initial_setting.outputs.project_name }}
+      jira_key: ${{ inputs.jira_key }}
 
   lambda-release-qa:
-    needs: 
-      - create-qa-jira-release
-    uses: backend-sw-development-team4/.github/.github/workflows/lambda-release.yaml@main
+    needs:
+      - release-qa
+      - initial_setting
+    uses: backend-sw-development-team4/.github/.github/workflows/lambda_release.yaml@main
+    secrets: inherit
     with:
-      image_tag: ${{ needs.create-qa-jira-release.outputs.async_image_tag }}
-      image_name: 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-async-an2
-      aws_account_id: 103827304329
-      lambda_function_name: lambda-mopl-qa-async-an2
+      env: ${{ inputs.release_env }}
+      git_org: ${{ needs.initial_setting.outputs.git_org }}
+      repo: ${{ needs.initial_setting.outputs.repo }}
+      release_branch: ${{ needs.initial_setting.outputs.release_branch }}
+      aws_account_id: ${{ needs.initial_setting.outputs.s3_aws_accountid }}
+      aws_resource_key: mopl015
 
-  devops-approval: 
+  devops-approval:
     name: Waiting for Devops Approval (PROD)
     if: ${{ inputs.release_env == 'PROD' }}
     needs: [initial_setting]
     environment: devops-approval
     runs-on: ubuntu-latest
-    steps: 
+    steps:
       - name: Dummy Step
         run: echo "This is a dummy step."
 
-  create-prod-jira-release:
-    name: deploy Prod (PROD)
-    outputs:
-      async_image_tag: ${{ steps.async_image_tag.outputs.async_image_tag }}
-    if: ${{ inputs.release_env == 'PROD' }}
+  # PROD gitops Release
+  release-prod:
+    name: Release PROD
     needs:
       - initial_setting
       - devops-approval
-    runs-on: ubuntu-latest
-    environment: main
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Install yq
-        run: |
-          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
-
-      #After copying, update the production environment with server version information from prod_version.json
-      - name: Copy the qa_version.json file to prod_version.json file
-        run: |
-          cp qa_version.json prod_version.json
-
-      - name: Update version.json information
-        if: ${{ inputs.application_name }} != ""
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["MainVersion"].["MoplServiceMainVersion"] = "${{ inputs.release_version }}"' prod_version.json     
-
-      - name: Get Time
-        id: time
-        uses: nanzm/get-time-action@master
-        with:
-          timeZone: UTC-9
-          format: 'YYYY-MM-DD HH:mm:ss'
-
-      - name: Update Release date to version.json information
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["MainVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' prod_version.json
-
-      - name: Update Backend & Frontend image tags from prod_version.json
-        run: |
-          update_images () {
-            local section=$1
-            local prefix=$2
-          
-            jq -r ".$section | to_entries[] | \"\(.key) \(.value)\"" prod_version.json | \
-            while read service_name image_tag; do
-              kustomize_file="./$service_name/env/prod/kustomization.yaml"
-          
-              if [ -f "$kustomize_file" ]; then
-                final_tag="${prefix}${image_tag}"
-                echo "[$section] $service_name -> $final_tag"
-          
-                yq -i '
-                  (.images[] | select(.name == "'$service_name'") | .newTag) = "'$final_tag'"
-                ' "$kustomize_file"
-              else
-                echo "[$section] $kustomize_file not found"
-              fi
-            done
-          }
-          
-          # Backend: prefix null
-          update_images "BackendVersion" ""
-          
-          # Frontend: prod- prefix
-          update_images "FrontendVersion" "prod-"
-
-      # Login To HVC_Admin_Automation for Deploy
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
-          role-session-name: githubactions
-          aws-region: ap-northeast-2
-
-      # Assume to Each Account as AWSControlTowerExecution
-      - name: Push build artifact to S3 Bucket and invalidation CloudFront
-        run: |
-          # Assume Role using an Automation Key
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.mopl_prod_aws_accountid }}:role/AWSTerraformAssumeRole --role-session-name AWS)
-          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          
-          # Upload qa version file to S3 bucket.
-          aws s3 cp ${{ inputs.prod_version_json_file_path }} s3://mopl015-common-p-an2/${{ inputs.prod_version_json_file_path }} --region ap-northeast-2
-
-          # Setting CloudFront
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cloudfront_distribution_id }} --paths "/*"
-  
-      
-      - name: Commit changes
-        run: |
-          git config user.name "GitHub Actions Bot" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit -m "ci: deploy mopl prod for ${{ inputs.release_version }}" && \
-          git push origin main
-        continue-on-error: true
-
-      - name: Create Github Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-        with:
-          tag_name: ${{ inputs.release_version }}
-          release_name: ${{ inputs.release_version }}
-          repo: ${{ needs.initial_setting.outputs.repo }}
-          commitish: ${{ needs.initial_setting.outputs.release_branch }}
-          body: |
-            :robot_face: This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release. :mag:
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. :telephone_receiver:
-            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
-
-      - name: Github Release Result
-        run: |
-          echo "is PROD"
-          echo ":mag: Check the release results"
-          echo ":link: Github Release Link : https://github.com/backend-sw-development-team4/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
-
-      - name: get PROD async_image_tag
-        id: async_image_tag
-        run: |
-          async_image_tag=$(jq -r '.["LambdaVersion"].["async-service"]' prod_version.json)
-          echo "async_image_tag=$async_image_tag" >> $GITHUB_OUTPUT
+    if: ${{ inputs.release_env == 'PROD' }}
+    uses: backend-sw-development-team4/.github/.github/workflows/gitops_update.yaml@main
+    secrets: inherit
+    with:
+      env: ${{ inputs.release_env }}
+      git_org: ${{ needs.initial_setting.outputs.git_org }}
+      repo: ${{ needs.initial_setting.outputs.repo }}
+      release_branch: ${{ needs.initial_setting.outputs.release_branch }}
+      release_version: ${{ inputs.release_version }}
+      s3_aws_accountid: ${{ needs.initial_setting.outputs.s3_aws_accountid }}
+      s3_bucket_name: ${{ needs.initial_setting.outputs.s3_bucket_name }}
+      cloudfront_distribution_id: ${{ needs.initial_setting.outputs.cloudfront_distribution_id }}
+      project_name: ${{ needs.initial_setting.outputs.project_name }}
+      jira_key: ${{ inputs.jira_key }}
 
   lambda-release-prod:
-    needs: 
-      - create-prod-jira-release
-    uses: backend-sw-development-team4/.github/.github/workflows/lambda-release.yaml@main
+    needs:
+      - release-prod
+      - initial_setting
+    uses: backend-sw-development-team4/.github/.github/workflows/lambda_release.yaml@main
+    secrets: inherit
     with:
-      image_tag: ${{ needs.create-prod-jira-release.outputs.async_image_tag }}
-      image_name: 339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-mopl015-async-an2
-      aws_account_id: 852637827699
-      lambda_function_name: lambda-mopl015-prod-async-an2
+      env: ${{ inputs.release_env }}
+      git_org: ${{ needs.initial_setting.outputs.git_org }}
+      repo: ${{ needs.initial_setting.outputs.repo }}
+      release_branch: ${{ needs.initial_setting.outputs.release_branch }}
+      aws_account_id: ${{ needs.initial_setting.outputs.s3_aws_accountid }}
+      aws_resource_key: mopl015
