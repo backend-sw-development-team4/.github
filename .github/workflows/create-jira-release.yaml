@@ -70,7 +70,7 @@ jobs:
     name: Release QA
     needs: initial_setting
     if: ${{ inputs.release_env == 'QA' }}
-    uses: backend-sw-development-team4/.github/.github/workflows/gitops_update.yaml@main
+    uses: backend-sw-development-team4/.github/.github/workflows/qa-lambda-release.yaml@main
     secrets: inherit
     with:
       env: ${{ inputs.release_env }}
@@ -84,19 +84,6 @@ jobs:
       project_name: ${{ needs.initial_setting.outputs.project_name }}
       jira_key: ${{ inputs.jira_key }}
 
-  lambda-release-qa:
-    needs:
-      - release-qa
-      - initial_setting
-    uses: backend-sw-development-team4/.github/.github/workflows/lambda_release.yaml@main
-    secrets: inherit
-    with:
-      env: ${{ inputs.release_env }}
-      git_org: ${{ needs.initial_setting.outputs.git_org }}
-      repo: ${{ needs.initial_setting.outputs.repo }}
-      release_branch: ${{ needs.initial_setting.outputs.release_branch }}
-      aws_account_id: ${{ needs.initial_setting.outputs.s3_aws_accountid }}
-      aws_resource_key: mopl015
 
   devops-approval:
     name: Waiting for Devops Approval (PROD)
@@ -115,7 +102,7 @@ jobs:
       - initial_setting
       - devops-approval
     if: ${{ inputs.release_env == 'PROD' }}
-    uses: backend-sw-development-team4/.github/.github/workflows/gitops_update.yaml@main
+    uses: backend-sw-development-team4/.github/.github/workflows/gitops-update.yaml@main
     secrets: inherit
     with:
       env: ${{ inputs.release_env }}
@@ -133,7 +120,7 @@ jobs:
     needs:
       - release-prod
       - initial_setting
-    uses: backend-sw-development-team4/.github/.github/workflows/lambda_release.yaml@main
+    uses: backend-sw-development-team4/.github/.github/workflows/qa-lambda-release.yaml@main
     secrets: inherit
     with:
       env: ${{ inputs.release_env }}

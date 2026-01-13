@@ -1,0 +1,95 @@
+name: Update Lambda Container Image
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        description: "Target environment (QA / PROD)"
+        type: string
+      git_org:
+        required: true
+        description: "gitops repo"
+        type: string
+      repo:
+        required: true
+        description: "gitops repo"
+        type: string
+      release_branch:
+        required: true
+        description: "gitops repo"
+        type: string
+      aws_account_id:
+        required: true
+        description: "AWS account ID where the Lambda function is deployed"
+        type: string
+      aws_resource_key:
+        required: true
+        description: "Target environment (mopl015 / kp017)"
+        type: string
+
+permissions: write-all  # Grant full permissions to this workflow
+
+jobs:
+  lambda-release:
+    runs-on: ubuntu-latest  # Specify the environment to run this job
+    name: Lambda Release Job
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.git_org }}/${{ inputs.repo }}
+          ref: refs/heads/${{ inputs.release_branch }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      # Step 1: Configure AWS credentials for the main AWS account
+      # This step sets up credentials to assume the deployment role in the main AWS account.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
+          role-session-name: githubactions  # Set a name for the AWS role session
+          aws-region: ap-northeast-2  # Specify the AWS region (modify based on your deployment needs)
+
+      - name: Update Lambda functions from version.json
+        run: |
+          set -e
+
+          ENV_LOWER=$(echo "${{ inputs.env }}" | tr '[:upper:]' '[:lower:]')
+          VERSION_FILE="${ENV_LOWER}_version.json"
+
+          if [ ! -f "$VERSION_FILE" ]; then
+            echo "Version file not found: $VERSION_FILE"
+            exit 1
+          fi
+
+          echo "Using version file: $VERSION_FILE"
+
+          # Assume the target AWS account role to get temporary credentials
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.aws_account_id }}:role/AWSTerraformAssumeRole --role-session-name AWS)
+
+          # Extract temporary AWS credentials (AccessKeyId, SecretAccessKey, SessionToken)
+          # These credentials will allow us to update the Lambda function in the target account
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
+          
+          # Iterate LambdaVersion
+          jq -r '.LambdaVersion | to_entries[] | "\(.key) \(.value)"' "$VERSION_FILE" | \
+          while read raw_service image_tag; do
+            service_name="${raw_service%-service}"
+
+            lambda_function_name="lambda-${{ inputs.aws_resource_key }}-${ENV_LOWER}-${service_name}-an2"
+            image_name="339712975332.dkr.ecr.ap-northeast-2.amazonaws.com/ecr-${{ inputs.aws_resource_key }}-${service_name}-an2"
+            image_uri="${image_name}:${image_tag}"
+
+            echo "  Updating Lambda"
+            echo "  Function : $lambda_function_name"
+            echo "  Image    : $image_uri"
+
+            echo "aws lambda update-function-code \
+            --function-name \"$lambda_function_name\" \
+            --image-uri \"$image_uri\""
+          done
+
+          echo "All Lambda functions updated successfully."

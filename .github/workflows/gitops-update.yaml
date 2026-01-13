@@ -33,6 +33,10 @@ on:
       project_name:
         required: true
         type: string
+      manual_version:
+        required: false
+        type: string
+        default: 'false'
 
 jobs:
   release:
@@ -49,13 +53,23 @@ jobs:
           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
+      - name: Download manual version.json artifact
+        #상용 또는 검증 수동 배포 시 수행
+        if: ${{ inputs.manual_version == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.env.outputs.env_lower }}_version_json
+
       - name: Copy the qa_version.json file to prod_version.json file
-        if: ${{ inputs.env == 'PROD' }}
+        #상용 jira release 시만 수행
+        if: ${{ inputs.env == 'PROD' && inputs.manual_version == 'false' }}
         run: |
           cp qa_version.json prod_version.json
 
       # 공통 로직 (QA / PROD 지원)
       - name: Update Backend & Frontend image tags
+        # 검증 jira release 시 수행 하지 않음
+        if: ${{ !(inputs.env == 'QA' && inputs.manual_version == 'false') }}
         run: |
           update_images () {
             ENV_LOWER=$(echo "${{ inputs.env }}" | tr '[:upper:]' '[:lower:]')
@@ -139,3 +153,5 @@ jobs:
           echo "is ${{ inputs.env }} deployment"
           echo ":mag: Check the release results"
           echo ":link: Github Release Link : https://github.com/${{ inputs.git_org }}/${{ inputs.repo }}/releases/tag/${{ inputs.release_version }}"
+
+
