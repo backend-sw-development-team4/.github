@@ -336,6 +336,18 @@ jobs:
           cmd: |
             yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./vote-front/env/prod/kustomization.yaml
 
+      - name: set operation-front prod image tag
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./operation-front/env/prod/kustomization.yaml
+
+      - name: set remote-front prod image tag
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.images[0].newTag = "prod-" + .images[0].newTag' ./remote-front/env/prod/kustomization.yaml
+
       - name: check image name and tag
         run: |
           egrep -r "newTag|newName" * |grep prod
@@ -373,30 +385,6 @@ jobs:
           git commit -m "ci: deploy mopl prod for ${{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
-
-      - name: Update msa prod tag
-        run: |
-          while IFS= read -r line; do
-          if [[ "${line:0:1}" != " " ]]; then
-            service_name=$(echo "$line" | awk -F':' '{print $1}' )
-          elif [[ $line == *"repo-name"* ]]; then
-            repo_name=$(echo "$line" | awk -F'/' '{print $NF}')
-          elif [[ $line == *"image-tag"* ]]; then
-            version_tag=$(echo "$line" | awk '{print $2}')
-            echo "Service Name: $service_name"
-            echo "rep url: $repo_name"
-            echo "version tag: $version_tag"
-            git clone https://${{ secrets.GH_MANAGEPACKAGE_TOKEN }}@github.com/${{ inputs.git_org }}/${repo_name}.git ${service_name}_tag
-            cd ${service_name}_tag
-            pwd
-            git tag -d prod || true
-            git push --delete origin prod || true 
-            git checkout $version_tag
-            git tag prod
-            git push origin prod
-            cd ..
-          fi
-          done < prod_version.yaml
 
       - name: Create Github Release
         uses: actions/create-release@v1
