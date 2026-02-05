@@ -36,12 +36,6 @@ jobs:
           path: ./gitops
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
-      - name: Update version version.yaml information
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}"' ./gitops/qa_version.yaml      
-
       - name: Update lambda server version.json information
         uses: mikefarah/yq@v4.34.2
         with:
