@@ -19,9 +19,10 @@ on:
         description: 'Release environment'
         required: true
         default: ""
-        type: string            
+        type: string
 
 permissions: write-all
+
 
 jobs:
   initial_setting:
@@ -29,103 +30,49 @@ jobs:
       git_org: ${{ steps.set_env.outputs.git_org }}
       repo: ${{ steps.set_env.outputs.repo }}
       release_branch: ${{ steps.set_env.outputs.release_branch }}
-      s3_aws_accountid: ${{ steps.set_env.outputs.s3_aws_accountid }}
-      s3_bucket_name: ${{ steps.set_env.outputs.s3_bucket_name }}
-      cloudfront_distribution_id: ${{ steps.set_env.outputs.cloudfront_distribution_id }}
       project_name: ${{ steps.set_env.outputs.project_name }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
-      - name: Repository List
+      - name: set env
         id: set_env
         run: |
-          if [ ${{ inputs.jira_key }}  == "MCP" ]; then
-            git_org=backend-sw-development-team4
-            repo=smartparking-gitops
-            release_branch=main
-            s3_aws_accountid=852637827699
-            s3_bucket_name=mopl015-common-p-an2
-            cloudfront_distribution_id=EXPTNFYJG8CR8
-            project_name=Mopl
-          elif [ ${{ inputs.jira_key }}  == "KP" ]; then
-            git_org=hanwhavision
-            repo=keeper-gitops
-            release_branch=release
-            s3_aws_accountid=528461295709
-            s3_bucket_name=keeper-common-p-an2
-            cloudfront_distribution_id=E275NKNZ2GZ1VA
-            project_name=Keeper
-          fi
-          
+          git_org=backend-sw-development-team4
+          repo=smartparking-gitops
+          release_branch=main
+          project_name=Mopl
+
           echo "git_org=$git_org" >> $GITHUB_OUTPUT
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
-          echo "s3_aws_accountid=$s3_aws_accountid" >> $GITHUB_OUTPUT
-          echo "s3_bucket_name=$s3_bucket_name" >> $GITHUB_OUTPUT
-          echo "cloudfront_distribution_id=$cloudfront_distribution_id" >> $GITHUB_OUTPUT
           echo "project_name=$project_name" >> $GITHUB_OUTPUT
-
-  # QA gitops Release
-  release-qa:
-    name: Release QA
+  # QA jira Release
+  jira-qa-release:
+    name: jira Release QA
     needs: initial_setting
     if: ${{ inputs.release_env == 'QA' }}
-    uses: backend-sw-development-team4/.github/.github/workflows/qa-lambda-release.yaml@main
+    uses: hanwhavision/keeper-github-action/.github/workflows/pbd-jira-qa-release.yaml@release
     secrets: inherit
     with:
-      env: ${{ inputs.release_env }}
-      git_org: ${{ needs.initial_setting.outputs.git_org }}
-      repo: ${{ needs.initial_setting.outputs.repo }}
-      release_branch: ${{ needs.initial_setting.outputs.release_branch }}
+      release_env: ${{ inputs.release_env }}
+      repository_org: ${{ needs.initial_setting.outputs.git_org }}
+      repository_name: ${{ needs.initial_setting.outputs.repo }}
+      repository_ref: ${{ needs.initial_setting.outputs.release_branch }}
       release_version: ${{ inputs.release_version }}
-      s3_aws_accountid: ${{ needs.initial_setting.outputs.s3_aws_accountid }}
-      s3_bucket_name: ${{ needs.initial_setting.outputs.s3_bucket_name }}
-      cloudfront_distribution_id: ${{ needs.initial_setting.outputs.cloudfront_distribution_id }}
       project_name: ${{ needs.initial_setting.outputs.project_name }}
-      jira_key: ${{ inputs.jira_key }}
 
-
-  devops-approval:
-    name: Waiting for Devops Approval (PROD)
+  # PROD jira Release
+  jira-prod-release:
+    name: jira Release PROD
+    needs: initial_setting
     if: ${{ inputs.release_env == 'PROD' }}
-    needs: [initial_setting]
-    environment: devops-approval
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dummy Step
-        run: echo "This is a dummy step."
-
-  # PROD gitops Release
-  release-prod:
-    name: Release PROD
-    needs:
-      - initial_setting
-      - devops-approval
-    if: ${{ inputs.release_env == 'PROD' }}
-    uses: backend-sw-development-team4/.github/.github/workflows/gitops-update.yaml@main
+    uses: hanwhavision/keeper-github-action/.github/workflows/pbd-jira-prod-release.yaml@release
     secrets: inherit
     with:
-      env: ${{ inputs.release_env }}
-      git_org: ${{ needs.initial_setting.outputs.git_org }}
-      repo: ${{ needs.initial_setting.outputs.repo }}
-      release_branch: ${{ needs.initial_setting.outputs.release_branch }}
+      release_env: ${{ inputs.release_env }}
+      repository_org: ${{ needs.initial_setting.outputs.git_org }}
+      repository_name: ${{ needs.initial_setting.outputs.repo }}
+      repository_ref: ${{ needs.initial_setting.outputs.release_branch }}
       release_version: ${{ inputs.release_version }}
-      s3_aws_accountid: ${{ needs.initial_setting.outputs.s3_aws_accountid }}
-      s3_bucket_name: ${{ needs.initial_setting.outputs.s3_bucket_name }}
-      cloudfront_distribution_id: ${{ needs.initial_setting.outputs.cloudfront_distribution_id }}
       project_name: ${{ needs.initial_setting.outputs.project_name }}
-      jira_key: ${{ inputs.jira_key }}
 
-  lambda-release-prod:
-    needs:
-      - release-prod
-      - initial_setting
-    uses: backend-sw-development-team4/.github/.github/workflows/qa-lambda-release.yaml@main
-    secrets: inherit
-    with:
-      env: ${{ inputs.release_env }}
-      git_org: ${{ needs.initial_setting.outputs.git_org }}
-      repo: ${{ needs.initial_setting.outputs.repo }}
-      release_branch: ${{ needs.initial_setting.outputs.release_branch }}
-      aws_account_id: ${{ needs.initial_setting.outputs.s3_aws_accountid }}
-      aws_resource_key: mopl015

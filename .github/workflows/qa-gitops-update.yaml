@@ -18,15 +18,6 @@ on:
       release_version:
         required: true
         type: string
-      s3_aws_accountid:
-        required: true
-        type: string
-      s3_bucket_name:
-        required: true
-        type: string
-      cloudfront_distribution_id:
-        required: true
-        type: string
       jira_key:
         required: true
         type: string
@@ -111,27 +102,6 @@ jobs:
           git add --all
           git commit -m "ci: deploy ${{ inputs.env }} for ${{ inputs.release_version }}" || true
           git push origin ${{ inputs.release_branch }}
-
-      # This step sets up credentials to assume the deployment role in the main AWS account.
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::339712975332:role/HV-platform-tf-automation
-          role-session-name: githubactions  # Set a name for the AWS role session
-          aws-region: ap-northeast-2  # Specify the AWS region (modify based on your deployment needs)
-
-      - name: Upload version.json to S3 & CloudFront invalidation
-        run: |
-          # Assume Role using an Automation Key
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.s3_aws_accountid }}:role/AWSTerraformAssumeRole --role-session-name AWS)
-          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          
-          # Upload version file to S3 bucket.
-          aws s3 cp "${{ inputs.env }}_version.json" s3://${{ inputs.s3_bucket_name }}/"${{ inputs.env }}_version.json" --region ap-northeast-2
-          # Setting CloudFront
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront_distribution_id }} --paths "/*"
 
       - name: Create Github Release
         uses: actions/create-release@v1
