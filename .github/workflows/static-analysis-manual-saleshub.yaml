@@ -12,7 +12,9 @@ on:
         default: 'Insert Repo Name'
         options:
           - saleshub-frontend
+          - saleshub-backend
           - saleshub-license-server
+          - saleshub-license-frontend
       ANALYSIS_PATH:
         description: 'Target Path'
         required: true
@@ -41,6 +43,8 @@ jobs:
         run: |
           if [ "${{ inputs.STREAM }}" == "saleshub-license-server" ]; then
             REPO_NAME=license-server
+          elif [ "${{ inputs.STREAM }}" == "saleshub-license-frontend" ]; then
+            REPO_NAME=license-frontend
           else
             REPO_NAME=${{ inputs.STREAM }}
           fi
